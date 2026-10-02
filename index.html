@@ -448,6 +448,11 @@ body.editing .role-cycle{display:inline-block}
           <div class="hint" id="passHint" dir="auto"></div>
           <div class="err" dir="auto"></div>
         </div>
+        <div class="field" data-f="stage">
+          <div class="lbl" id="l-stage">Stage <span class="auto-pill">auto</span></div>
+          <div class="seg" id="stageChoices" role="radiogroup" aria-labelledby="l-stage"></div>
+          <div class="err" dir="auto"></div>
+        </div>
         <div class="field" data-f="modality">
           <div class="lbl" id="l-modality">Modality <span class="auto-pill">auto</span></div>
           <div class="seg" id="modalityChoices" role="radiogroup" aria-labelledby="l-modality"></div>
@@ -468,7 +473,7 @@ body.editing .role-cycle{display:inline-block}
 <div class="dock">
   <div class="dock-bar" id="dockBar"></div>
   <div class="dock-inner">
-    <div class="dock-count"><b id="dockNum">0</b>of 14 filled <span id="dockNext"></span></div>
+    <div class="dock-count"><b id="dockNum">0</b>of 15 filled <span id="dockNext"></span></div>
     <button type="button" class="submit" id="submitBtn">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
       <span id="submitLabel">Submit task</span>
@@ -551,15 +556,17 @@ const DEFAULT_CONFIG = {
 
 /* Task link rules (same as Spot Check) */
 const LINK_PATTERN = /^https:\/\/labeling\.robot\.car\/#\/tasks\/do\/[A-Za-z0-9_]+\/id\/\d+(\/queue\/[^\/?#]+)?(\/frame\/.*)?$/i;
+const STAGES = ['Lidar Stage','Sellmapping Stage','Relabeling Stage'];
 const TASK_TYPE_RULES = [
-  { match:/^sellivandar2dqa$/i,  pass:'QA', modality:'Lidar' },
-  { match:/^sellivandar2d$/i,    pass:'FP', modality:'Lidar' },
-  { match:/^sellmslqa$/i,        pass:'QA', modality:null },
-  { match:/^sellmsl$/i,          pass:'FP', modality:null },
-  { match:/^sellmappingqa$/i,    pass:'QA', modality:'Lane Line' },
-  { match:/^sellmapping$/i,      pass:'FP', modality:'Lane Line' },
-  { match:/^sellrelabelingqa$/i, pass:'QA', modality:null },
-  { match:/^sellrelabeling$/i,   pass:'FP', modality:null }
+  /* Sellivandar: tolerant to "I"/"l" typo and with/without "2D" */
+  { match:/^sell[il]vandar(2d)?qa$/i, pass:'QA', modality:'Lidar',     stage:'Lidar Stage' },
+  { match:/^sell[il]vandar(2d)?$/i,   pass:'FP', modality:'Lidar',     stage:'Lidar Stage' },
+  { match:/^sellmslqa$/i,             pass:'QA', modality:null,        stage:null },
+  { match:/^sellmsl$/i,               pass:'FP', modality:null,        stage:null },
+  { match:/^sellmappingqa$/i,         pass:'QA', modality:'Lane Line', stage:'Sellmapping Stage' },
+  { match:/^sellmapping$/i,           pass:'FP', modality:'Lane Line', stage:'Sellmapping Stage' },
+  { match:/^sellrelabelingqa$/i,      pass:'QA', modality:null,        stage:'Relabeling Stage' },
+  { match:/^sellrelabeling$/i,        pass:'FP', modality:null,        stage:'Relabeling Stage' }
 ];
 const ROLES = ['QT','SV','SSV'];
 const QTC_FOR_SHIFT = s => /\(ON\)|over night/i.test(s) ? 'ON' : /\(N\)|^night/i.test(s) ? 'N' : 'M';
@@ -601,11 +608,11 @@ function armed(btn, action){           // two-tap confirm for destructive action
 }
 
 /* ───── state ───── */
-const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','modality','queueName','objects'];
+const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','stage','modality','queueName','objects'];
 const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];
 const SAVED = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];   // filled once, remembered on this device
 const S = Object.fromEntries(FIELDS.map(f => [f, '']));
-const auto = { taskId:false, pass:false, modality:false, queueName:false, qtcShift:false };
+const auto = { taskId:false, pass:false, stage:false, modality:false, queueName:false, qtcShift:false };
 const touched = {};
 let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); 
 let linkQueue = '';            // queue found in the link but missing from the list
@@ -633,6 +640,7 @@ const validators = {
               : '',
   taskId: v => /^\d{10,}$/.test(v) ? '' : 'الـ Task ID لازم يكون 10 أرقام على الأقل',
   pass: v => v ? '' : 'اختار FP أو QA',
+  stage: v => v ? '' : 'اختار الـ Stage',
   modality: v => v ? '' : 'اختار الـ Modality',
   queueName: v => v ? '' : 'اختار الـ Queue',
   objects: v => /^\d+$/.test(String(v)) ? '' : 'اكتب عدد الـ Objects'
@@ -694,6 +702,7 @@ function afterPick(field){
   if (field === 'unit') renderUnits();
   if (field === 'qtcShift'){ S.qtcName = ''; persistIdentity(); renderQtcShift(); renderQtc(); }
   if (field === 'pass'){ renderPass(); passHint(); }
+  if (field === 'stage') renderStage();
   if (field === 'modality') renderModality();
   if (field === 'queueName') renderQueues();
 }
@@ -701,6 +710,7 @@ const renderShift = () => renderChoices($('#shiftChoices'), CONFIG.shifts, 'shif
 const renderUnits = () => renderChoices($('#unitChoices'), CONFIG.units, 'unit', { editType:'unit' });
 const renderQtcShift = () => renderChoices($('#qtcShiftChoices'), [{label:'Morning',value:'M'},{label:'Night',value:'N'},{label:'Over Night',value:'ON'}], 'qtcShift');
 const renderPass = () => renderChoices($('#passChoices'), ['FP','QA'], 'pass');
+const renderStage = () => renderChoices($('#stageChoices'), STAGES, 'stage');
 const renderModality = () => renderChoices($('#modalityChoices'), ['Lidar','Lane Line'], 'modality');
 function renderQueues(){
   const list = CONFIG.queues.map(q => ({ label:q, value:q }));
@@ -770,7 +780,8 @@ function addBtn(label, onclick){
 function identityValid(){ return IDENTITY.every(f => !validators[f](S[f])); }
 function renderSummary(){
   const box = $('#whoSummary'); box.replaceChildren();
-  [['', S.shift], ['', S.unit], ['PC', S.pcNo], ['', S.labelerName]].forEach(([k, v]) => {
+  [['', S.shift], ['', S.unit], ['PC', S.pcNo], ['', S.labelerName], ['Yubikey', S.yubikey]].forEach(([k, v]) => {
+    if (!v) return;
     const s = h('span'); if (k) s.append(h('small', { text:k })); s.append(v); box.append(s);
   });
   box.append(h('button', { type:'button', class:'text-btn', text:'Change', onclick:() => collapseWho(false) }));
@@ -802,7 +813,7 @@ function onLink(raw, fromBlur = false){
   S.taskLink = v;
   const hint = $('#linkHint');
   hint.className = 'hint';
-  ['taskId','pass','modality','queueName'].forEach(f => { if (auto[f]) { S[f] = ''; setAuto(f, false); } });
+  ['taskId','pass','stage','modality','queueName'].forEach(f => { if (auto[f]) { S[f] = ''; setAuto(f, false); } });
   linkQueue = ''; input._passFromLink = '';
   if (!v){ hint.textContent = ''; syncAutoUI(); showErr('taskLink'); progress(); return; }
   const bad = validators.taskLink(v);
@@ -814,6 +825,7 @@ function onLink(raw, fromBlur = false){
   const rule = TASK_TYPE_RULES.find(r => r.match.test(type));
   let pass = rule ? rule.pass : (/qa/i.test(v) ? 'QA' : 'FP');
   S.pass = pass; setAuto('pass', true); input._passFromLink = pass;
+  if (rule && rule.stage){ S.stage = rule.stage; setAuto('stage', true); }
   if (rule && rule.modality){ S.modality = rule.modality; setAuto('modality', true); }
   const qm = v.match(/\/queue\/([^\/?#]+)/i);
   if (qm){
@@ -825,9 +837,9 @@ function onLink(raw, fromBlur = false){
   syncAutoUI(); touched.taskLink = true; showErr('taskLink'); progress();
 }
 function syncAutoUI(){
-  renderPass(); renderModality(); renderQueues(); passHint();
+  renderPass(); renderStage(); renderModality(); renderQueues(); passHint();
   $('#taskId').value = S.taskId;
-  ['taskId','pass','modality','queueName'].forEach(f => { showErr(f); });
+  ['taskId','pass','stage','modality','queueName'].forEach(f => { showErr(f); });
 }
 
 /* ───── counter + recent ───── */
@@ -880,14 +892,14 @@ function showDup(id, when){
 $('#dupOk').addEventListener('click', () => { $('#dupDlg').close(); $('#taskLink').focus(); });
 
 function resetTask(){
-  ['taskLink','taskId','pass','modality','queueName','objects','qtcShift','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
+  ['taskLink','taskId','pass','stage','modality','queueName','objects','qtcShift','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
   qtcQuery = '';
-  ['taskId','pass','modality','queueName'].forEach(f => setAuto(f, false));
+  ['taskId','pass','stage','modality','queueName'].forEach(f => setAuto(f, false));
   linkQueue = ''; $('#taskLink')._passFromLink = '';
   $('#taskLink').value = ''; $('#taskId').value = ''; $('#objects').value = ''; $('#linkHint').textContent = '';
   attempted = false;
   FIELDS.forEach(showErr);
-  renderPass(); renderModality(); renderQueues(); passHint(); renderQtcShift(); renderQtc();
+  renderPass(); renderStage(); renderModality(); renderQueues(); passHint(); renderQtcShift(); renderQtc();
 }
 
 async function submit(){
@@ -903,7 +915,7 @@ async function submit(){
   if (doneIds[S.taskId]){ showDup(S.taskId, new Date(doneIds[S.taskId]).toLocaleString()); return; }
 
   busy = true; const btn = $('#submitBtn'); btn.setAttribute('aria-busy','true'); $('#submitLabel').textContent = 'Submitting…';
-  const payload = { action:'submitTask', timestamp:new Date().toISOString(), ...S, stage:S.pass };
+  const payload = { action:'submitTask', timestamp:new Date().toISOString(), ...S };  // S.stage = Lidar/Sellmapping/Relabeling Stage, S.pass = FP/QA
   try {
     let res;
     if (DEMO){ await sleep(700); res = { success:true }; }
@@ -1083,7 +1095,7 @@ async function init(){
   ['pcNo','labelerName','nationalId'].forEach(f => $('#' + f).value = S[f]);
   const ym = S.yubikey.match(/^me(\d{6})@/i); if (ym) $('#yubikey').value = ym[1];
   FIELDS.forEach(f => { if (auto[f] !== undefined) setAuto(f, false); });
-  renderShift(); renderUnits(); renderQtcShift(); renderQtc(); renderPass(); renderModality(); renderQueues();
+  renderShift(); renderUnits(); renderQtcShift(); renderQtc(); renderPass(); renderStage(); renderModality(); renderQueues();
   renderOdo(); renderRecent(); progress();
   if (IDENTITY.filter(f => f !== 'nationalId').every(f => !validators[f](S[f]))) collapseWho(false); else collapseWho(false);
   if (!DEMO){
