@@ -444,7 +444,7 @@ body.editing .role-cycle{display:inline-block}
           <div class="err" dir="auto"></div>
         </div>
         <div class="field span2" data-f="qtcShift">
-          <div class="lbl" id="l-qtcShift">QTC shift <span class="auto-pill">from your shift</span></div>
+          <div class="lbl" id="l-qtcShift">QTC shift</div>
           <div class="seg" id="qtcShiftChoices" role="radiogroup" aria-labelledby="l-qtcShift"></div>
           <div class="err" dir="auto"></div>
         </div>
@@ -599,7 +599,7 @@ function armed(btn, action){           // two-tap confirm for destructive action
 /* ───── state ───── */
 const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','modality','queueName','objects'];
 const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];
-const SAVED = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','yubikey'];   // filled once, remembered on this device
+const SAVED = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];   // filled once, remembered on this device
 const S = Object.fromEntries(FIELDS.map(f => [f, '']));
 const auto = { taskId:false, pass:false, modality:false, queueName:false, qtcShift:false };
 const touched = {};
@@ -685,8 +685,6 @@ function renderChoices(box, options, field, { editType, ctx } = {}){
 }
 function afterPick(field){
   if (field === 'shift'){
-    const q = QTC_FOR_SHIFT(S.shift);
-    if (!S.qtcShift || auto.qtcShift){ S.qtcShift = q; setAuto('qtcShift', true); S.qtcName = ''; persistIdentity(); renderQtcShift(); renderQtc(); }
     renderShift();
   }
   if (field === 'unit') renderUnits();
@@ -829,8 +827,10 @@ function syncAutoUI(){
 }
 
 /* ───── counter + recent ───── */
-let session = store.get('meti-backup-session', { count:0, log:[] });
-const doneIds = store.get('meti-backup-ids', {});     // taskId → ISO time
+/* Session lives in memory only: closing the tab or refreshing starts a fresh count. */
+try { localStorage.removeItem('meti-backup-session'); localStorage.removeItem('meti-backup-ids'); } catch {}
+let session = { count:0, log:[] };
+const doneIds = {};     // taskId → ISO time (this page session only; the sheet itself blocks real duplicates)
 function renderOdo(){
   const digits = String(session.count).padStart(3, '0');
   const odo = $('#odo');
@@ -851,12 +851,12 @@ function renderRecent(){
   session.log.slice(0, 6).forEach(e => ol.append(h('li', {},
     h('time', { text:e.t }), h('span', { class:'rid', text:e.id }), h('span', { class:'rmeta', text:`${e.pass} · ${e.obj} obj` }))));
 }
-function saveSession(){ store.set('meti-backup-session', session); }
+function saveSession(){}
 
 $('#undoBtn').addEventListener('click', () => {
   if (!session.count) return;
   const last = session.log.shift(); session.count--; if (last) delete doneIds[last.id];
-  store.set('meti-backup-ids', doneIds); saveSession(); renderOdo(); renderRecent(); toast('Last task removed from the count');
+  saveSession(); renderOdo(); renderRecent(); toast('Last task removed from the count');
 });
 $('#resetBtn').addEventListener('click', function(){
   if (!this.dataset.armed){ this.dataset.armed = '1'; this.textContent = 'Tap again to reset'; this._t = setTimeout(() => { delete this.dataset.armed; this.textContent = 'Reset count'; }, 2800); return; }
@@ -876,14 +876,14 @@ function showDup(id, when){
 $('#dupOk').addEventListener('click', () => { $('#dupDlg').close(); $('#taskLink').focus(); });
 
 function resetTask(){
-  ['taskLink','taskId','pass','modality','queueName','objects','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
+  ['taskLink','taskId','pass','modality','queueName','objects','qtcShift','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
   qtcQuery = '';
   ['taskId','pass','modality','queueName'].forEach(f => setAuto(f, false));
   linkQueue = ''; $('#taskLink')._passFromLink = '';
   $('#taskLink').value = ''; $('#taskId').value = ''; $('#objects').value = ''; $('#linkHint').textContent = '';
   attempted = false;
   FIELDS.forEach(showErr);
-  renderPass(); renderModality(); renderQueues(); passHint(); renderQtc();
+  renderPass(); renderModality(); renderQueues(); passHint(); renderQtcShift(); renderQtc();
 }
 
 async function submit(){
@@ -912,7 +912,7 @@ async function submit(){
       const now = new Date();
       session.count++;
       session.log.unshift({ t:now.toTimeString().slice(0,5), id:S.taskId, pass:S.pass, obj:S.objects });
-      doneIds[S.taskId] = now.toISOString(); store.set('meti-backup-ids', doneIds);
+      doneIds[S.taskId] = now.toISOString();
       saveSession(); renderOdo(); renderRecent();
       toast(`Task ${S.taskId} submitted`);
       resetTask(); collapseWho(true); progress();
