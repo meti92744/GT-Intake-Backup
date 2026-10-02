@@ -390,19 +390,6 @@ body.editing .role-cycle{display:inline-block}
             <div class="err" dir="auto"></div>
           </div>
         </div>
-
-        <div class="field" data-f="qtcShift">
-          <div class="lbl" id="l-qtcShift">QTC shift <span class="auto-pill">from your shift</span></div>
-          <div class="seg" id="qtcShiftChoices" role="radiogroup" aria-labelledby="l-qtcShift"></div>
-          <div class="err" dir="auto"></div>
-        </div>
-
-        <div class="field" data-f="qtcName" style="margin-bottom:6px">
-          <div class="lbl" id="l-qtcName">QTC name</div>
-          <div id="qtcBox"></div>
-          <div class="hint" id="qtcSync" dir="auto"></div>
-          <div class="err" dir="auto"></div>
-        </div>
       </div>
     </section>
 
@@ -454,6 +441,18 @@ body.editing .role-cycle{display:inline-block}
           <div class="lbl" id="l-queue">Queue <span class="auto-pill">auto</span></div>
           <div class="queues" id="queueChoices" role="radiogroup" aria-labelledby="l-queue"></div>
           <div style="margin-top:10px"><button type="button" class="add-btn" data-add="queue"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add queue</button></div>
+          <div class="err" dir="auto"></div>
+        </div>
+        <div class="field span2" data-f="qtcShift">
+          <div class="lbl" id="l-qtcShift">QTC shift <span class="auto-pill">from your shift</span></div>
+          <div class="seg" id="qtcShiftChoices" role="radiogroup" aria-labelledby="l-qtcShift"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+
+        <div class="field span2" data-f="qtcName">
+          <div class="lbl" id="l-qtcName">QTC name</div>
+          <div id="qtcBox"></div>
+          <div class="hint" id="qtcSync" dir="auto"></div>
           <div class="err" dir="auto"></div>
         </div>
       </div>
@@ -519,7 +518,7 @@ body.editing .role-cycle{display:inline-block}
      POST {action:'saveConfig',pin,config}
      POST {action:'submitTask', …fields}  → {success, message, duplicate?, date?, time?}
    ════════════════════════════════════════════════════════════ */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUon6tDiedohWYXi-m8bpybC5c8JaN75_hx11O9xcmTQ_rwINL3x6070dywV-DbcLc/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVRdGUkdMy90d4I9o1Dun2aeMU-Np75FCA23TZrvXvJu7qMfEbcz-pynyTa86e-KQ/exec";
 const DEMO = !APPS_SCRIPT_URL;
 const DEMO_PIN = "Intake2026";
 
@@ -599,8 +598,8 @@ function armed(btn, action){           // two-tap confirm for destructive action
 
 /* ───── state ───── */
 const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','modality','queueName','objects'];
-const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey'];
-const SAVED = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey'];   // filled once, remembered on this device
+const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];
+const SAVED = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','yubikey'];   // filled once, remembered on this device
 const S = Object.fromEntries(FIELDS.map(f => [f, '']));
 const auto = { taskId:false, pass:false, modality:false, queueName:false, qtcShift:false };
 const touched = {};
@@ -769,7 +768,7 @@ function addBtn(label, onclick){
 function identityValid(){ return IDENTITY.every(f => !validators[f](S[f])); }
 function renderSummary(){
   const box = $('#whoSummary'); box.replaceChildren();
-  [['', S.shift], ['', S.unit], ['PC', S.pcNo], ['', S.labelerName], ['QTC', S.qtcName]].forEach(([k, v]) => {
+  [['', S.shift], ['', S.unit], ['PC', S.pcNo], ['', S.labelerName]].forEach(([k, v]) => {
     const s = h('span'); if (k) s.append(h('small', { text:k })); s.append(v); box.append(s);
   });
   box.append(h('button', { type:'button', class:'text-btn', text:'Change', onclick:() => collapseWho(false) }));
@@ -877,13 +876,14 @@ function showDup(id, when){
 $('#dupOk').addEventListener('click', () => { $('#dupDlg').close(); $('#taskLink').focus(); });
 
 function resetTask(){
-  ['taskLink','taskId','pass','modality','queueName','objects'].forEach(f => { S[f] = ''; touched[f] = false; });
+  ['taskLink','taskId','pass','modality','queueName','objects','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
+  qtcQuery = '';
   ['taskId','pass','modality','queueName'].forEach(f => setAuto(f, false));
   linkQueue = ''; $('#taskLink')._passFromLink = '';
   $('#taskLink').value = ''; $('#taskId').value = ''; $('#objects').value = ''; $('#linkHint').textContent = '';
   attempted = false;
   FIELDS.forEach(showErr);
-  renderPass(); renderModality(); renderQueues(); passHint();
+  renderPass(); renderModality(); renderQueues(); passHint(); renderQtc();
 }
 
 async function submit(){
