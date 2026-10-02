@@ -345,7 +345,6 @@ body.editing .role-cycle{display:inline-block}
       <div class="block-head">
         <h2 id="whoTitle">Your shift</h2>
       </div>
-      <p class="block-note" dir="auto"></p>
       <div class="who-summary" id="whoSummary"></div>
 
       <div class="who-body">
@@ -393,9 +392,26 @@ body.editing .role-cycle{display:inline-block}
       </div>
     </section>
 
+    <!-- QTC (picked fresh for every task) -->
+    <section class="block" id="qtcBlock" aria-labelledby="qtcTitle">
+      <div class="block-head"><h2 id="qtcTitle">QTC</h2></div>
+        <div class="field" data-f="qtcShift">
+          <div class="lbl" id="l-qtcShift">QTC shift</div>
+          <div class="seg" id="qtcShiftChoices" role="radiogroup" aria-labelledby="l-qtcShift"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+
+        <div class="field" data-f="qtcName" style="margin-bottom:0">
+          <div class="lbl" id="l-qtcName">QTC name</div>
+          <div id="qtcBox"></div>
+          <div class="hint" id="qtcSync" dir="auto"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+    </section>
+
     <!-- Task -->
     <section class="block" id="task" aria-labelledby="taskTitle">
-      <div class="block-head"><h2 id="taskTitle">This task</h2></div>
+      <div class="block-head"><h2 id="taskTitle">Task Details</h2></div>
       <p class="block-note" dir="auto">اللينك لازم يبدأ بـ https://labeling.robot.car/#</p>
 
       <div class="field link-field" data-f="taskLink" style="margin-bottom:0">
@@ -441,18 +457,6 @@ body.editing .role-cycle{display:inline-block}
           <div class="lbl" id="l-queue">Queue <span class="auto-pill">auto</span></div>
           <div class="queues" id="queueChoices" role="radiogroup" aria-labelledby="l-queue"></div>
           <div style="margin-top:10px"><button type="button" class="add-btn" data-add="queue"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add queue</button></div>
-          <div class="err" dir="auto"></div>
-        </div>
-        <div class="field span2" data-f="qtcShift">
-          <div class="lbl" id="l-qtcShift">QTC shift</div>
-          <div class="seg" id="qtcShiftChoices" role="radiogroup" aria-labelledby="l-qtcShift"></div>
-          <div class="err" dir="auto"></div>
-        </div>
-
-        <div class="field span2" data-f="qtcName">
-          <div class="lbl" id="l-qtcName">QTC name</div>
-          <div id="qtcBox"></div>
-          <div class="hint" id="qtcSync" dir="auto"></div>
           <div class="err" dir="auto"></div>
         </div>
       </div>
@@ -916,7 +920,7 @@ async function submit(){
       saveSession(); renderOdo(); renderRecent();
       toast(`Task ${S.taskId} submitted`);
       resetTask(); collapseWho(true); progress();
-      $('#task').scrollIntoView({ block:'start' }); $('#taskLink').focus({ preventScroll:true });
+      $('#qtcBlock').scrollIntoView({ block:'start' }); $('#taskLink').focus({ preventScroll:true });
     } else toast(res.message || 'Submit failed — try again', true);
   } catch (e){
     toast('No connection. Check the network and try again.', true);
