@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>METI Task Submission</title>
+<title>GT-Intake Backup</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0zMCAtMjggMTMwIDEzMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSI4MCIgeTI9IjcwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMjliNmY2Ii8+PHN0b3Agb2Zmc2V0PSIuNTUiIHN0b3AtY29sb3I9IiMxNTY1ZDgiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwZDJmYTgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cG9seWdvbiBwb2ludHM9IjI2LDAgOTYsMCA3MCwzNCAwLDM0IiBmaWxsPSJ1cmwoI2cpIi8+PHBvbHlnb24gcG9pbnRzPSIwLDQwIDcwLDQwIDQ0LDc0IC0yNiw3NCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0zMCAtMjggMTMwIDEzMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSI4MCIgeTI9IjcwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMjliNmY2Ii8+PHN0b3Agb2Zmc2V0PSIuNTUiIHN0b3AtY29sb3I9IiMxNTY1ZDgiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwZDJmYTgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cG9seWdvbiBwb2ludHM9IjI2LDAgOTYsMCA3MCwzNCAwLDM0IiBmaWxsPSJ1cmwoI2cpIi8+PHBvbHlnb24gcG9pbnRzPSIwLDQwIDcwLDQwIDQ0LDc0IC0yNiw3NCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -279,6 +281,8 @@ dialog{border-radius:20px}
 .role-cycle{display:none;flex:none;border:1px dashed var(--blue);background:transparent;color:var(--blue);border-radius:99px;font-size:11px;font-weight:700;padding:3px 9px}
 body.editing .role-cycle{display:inline-block}
 .qtc-pick{padding:10px 10px}
+
+.hint.chk{font-size:22px;font-weight:800;line-height:1;margin-top:8px}
 </style>
 </head>
 <body>
@@ -327,8 +331,7 @@ body.editing .role-cycle{display:inline-block}
   <!-- ═════ Form sheet ═════ -->
   <main class="sheet">
     <header class="sheet-head">
-      <h1>Submit a task</h1>
-      <p dir="auto">الصق لينك التاسك وهو هيملي الـ Task ID والـ Pass والـ Modality والـ Queue لوحده.</p>
+      <h1>GT-Intake Backup</h1>
       </header>
 
     <div class="edit-banner hidden" id="editBanner">
@@ -597,7 +600,7 @@ function armed(btn, action){           // two-tap confirm for destructive action
 /* ───── state ───── */
 const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','modality','queueName','objects'];
 const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey'];
-const SAVED = ['shift','unit','pcNo','labelerName','qtcShift','qtcName','yubikey'];   // National ID is never kept on the device
+const SAVED = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey'];   // filled once, remembered on this device
 const S = Object.fromEntries(FIELDS.map(f => [f, '']));
 const auto = { taskId:false, pass:false, modality:false, queueName:false, qtcShift:false };
 const touched = {};
@@ -817,8 +820,7 @@ function onLink(raw, fromBlur = false){
     if (!CONFIG.queues.includes(q)) linkQueue = q;
     S.queueName = q; setAuto('queueName', true);
   }
-  hint.textContent = 'اللينك سليم — اتقرا الـ ID والـ Pass'+(S.modality?' والـ Modality':'')+(S.queueName?' والـ Queue':'')+'.';
-  hint.classList.add('ok');
+  hint.textContent = '✓'; hint.classList.add('ok','chk');
   syncAutoUI(); touched.taskLink = true; showErr('taskLink'); progress();
 }
 function syncAutoUI(){
@@ -1074,7 +1076,7 @@ async function init(){
     const c = store.get('meti-backup-config', null); if (c) CONFIG = c;
   }
   normalizeCfg(); loadSaved();
-  ['pcNo','labelerName'].forEach(f => $('#' + f).value = S[f]);
+  ['pcNo','labelerName','nationalId'].forEach(f => $('#' + f).value = S[f]);
   const ym = S.yubikey.match(/^me(\d{6})@/i); if (ym) $('#yubikey').value = ym[1];
   FIELDS.forEach(f => { if (auto[f] !== undefined) setAuto(f, false); });
   renderShift(); renderUnits(); renderQtcShift(); renderQtc(); renderPass(); renderModality(); renderQueues();
@@ -1088,8 +1090,6 @@ async function init(){
         CONFIG = { shifts: c.shifts?.length ? c.shifts : DEFAULT_CONFIG.shifts, units: c.units?.length ? c.units : DEFAULT_CONFIG.units,
                    queues: c.queues?.length ? c.queues : DEFAULT_CONFIG.queues, personnel: c.personnel || DEFAULT_CONFIG.personnel };
         normalizeCfg(); renderUnits(); renderQueues(); renderQtc();
-        const n = ['M','N','ON'].reduce((t,k) => t + CONFIG.personnel[k].qtc.length, 0);
-        $('#qtcSync').textContent = n + ' QTC names loaded from the sheet'; $('#qtcSync').className = 'hint ok';
       }
     } catch { $('#qtcSync').textContent = 'Could not reach the sheet — check APPS_SCRIPT_URL / deployment access'; }
   }
