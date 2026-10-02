@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>METI Task Submission</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF1F7; --sheet:#FFFFFF; --text:#12203D; --muted:#5B6882; --line:#D3DBE7; --chip:#F3F6FB;
+  --blue:#1565D8; --blue-deep:#0D2FA8; --cyan:#29B6F6; --good:#0E9F6E; --bad:#D4303C; --warn:#B26A00; --warn-bg:#FFF4DC;
+  --rail:#0A1633; --rail-2:#13224A; --on-rail:#EAF0FF; --on-rail-muted:#8E9CC0;
+  --font-ui:"IBM Plex Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif;
+  --font-display:"Plus Jakarta Sans","IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0A1020; --sheet:#101A33; --text:#E7EDFA; --muted:#98A5C2; --line:#27345A; --chip:#16224A;
+    --blue:#5A9BFF; --good:#34D399; --bad:#FF7480; --warn:#F5B84B; --warn-bg:#2E2410; --rail:#060C1D; --rail-2:#101C3E;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0A1020; --sheet:#101A33; --text:#E7EDFA; --muted:#98A5C2; --line:#27345A; --chip:#16224A;
+  --blue:#5A9BFF; --good:#34D399; --bad:#FF7480; --warn:#F5B84B; --warn-bg:#2E2410; --rail:#060C1D; --rail-2:#101C3E;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px)}
+body{margin:0;background:var(--paper);color:var(--text);font:400 16px/1.5 var(--font-ui);-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px;border-radius:4px}
+.hidden{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{display:grid;grid-template-columns:340px minmax(0,1fr);min-height:100vh}
+
+/* ───────── Rail ───────── */
+.rail{position:sticky;top:0;align-self:start;height:100vh;background:var(--rail);color:var(--on-rail);padding:30px 28px 26px;display:flex;flex-direction:column;gap:30px;overflow-y:auto}
+.logo{display:block;height:40px;width:auto}
+.tally-label{font-size:14px;color:var(--on-rail-muted);margin:0 0 10px}
+.odo{display:flex;gap:6px;font:800 60px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.od{display:block;height:1.12em;width:.74em;overflow:hidden;background:var(--rail-2);border-radius:8px;position:relative}
+.od::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.35)}
+.od-strip{display:block;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+.od-strip span{display:block;height:1.12em;line-height:1.12em;text-align:center}
+.tally-actions{display:flex;gap:18px;margin-top:14px}
+.link-btn{background:none;border:0;padding:4px 0;color:var(--on-rail-muted);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.link-btn:hover{color:#fff}
+.link-btn[data-armed]{color:#FFB4BA}
+.recent h2{font:600 14px/1.3 var(--font-ui);color:var(--on-rail-muted);margin:0 0 10px}
+.recent ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.recent li{display:grid;grid-template-columns:48px 1fr auto;align-items:baseline;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.09);font-size:14px}
+.recent li:last-child{border-bottom:1px solid rgba(255,255,255,.09)}
+.recent time{color:var(--on-rail-muted);font-variant-numeric:tabular-nums}
+.recent .rid{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.recent .rmeta{color:var(--cyan);font-weight:600;font-size:13px;white-space:nowrap}
+.recent .empty{border:0;color:var(--on-rail-muted);display:block;padding:0;font-size:14px}
+.edit-toggle{margin-top:auto;display:flex;align-items:center;gap:10px;background:transparent;border:1px solid rgba(255,255,255,.22);color:var(--on-rail);padding:11px 14px;border-radius:8px;font-weight:500}
+.edit-toggle:hover{background:rgba(255,255,255,.07)}
+body.editing .edit-toggle{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.ico{width:18px;height:18px;flex:none}
+
+/* ───────── Sheet ───────── */
+.sheet{padding:52px clamp(20px,5vw,72px) 170px;max-width:900px;width:100%}
+.sheet-head h1{font:800 clamp(32px,4.4vw,46px)/1.05 var(--font-display);letter-spacing:-.02em;margin:0 0 10px}
+.sheet-head p{margin:0;color:var(--muted);max-width:52ch}
+.preview-note{display:inline-block;margin-top:14px;font-size:13px;color:var(--warn);background:var(--warn-bg);padding:5px 10px;border-radius:6px}
+
+.edit-banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:var(--warn-bg);color:var(--warn);padding:12px 16px;border-radius:8px;margin:26px 0 0;font-weight:500}
+.edit-banner .grow{flex:1}
+.edit-banner button{background:none;border:1px solid currentColor;color:inherit;border-radius:6px;padding:5px 12px}
+#saveStatus{font-weight:400;font-size:14px}
+
+.block{margin-top:44px;padding-top:26px;border-top:2px solid var(--text)}
+.block-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.block h2{font:700 24px/1.2 var(--font-display);margin:0;letter-spacing:-.01em}
+.block-note{color:var(--muted);font-size:14px;margin:0 0 22px}
+.who-summary{display:none;align-items:center;gap:8px 18px;flex-wrap:wrap;margin-top:14px}
+.who-summary span{font-weight:500}
+.who-summary span small{color:var(--muted);font-weight:400;margin-inline-end:6px}
+#who.collapsed .who-body,#who.collapsed .block-note{display:none}
+#who.collapsed .who-summary{display:flex}
+.text-btn{background:none;border:0;color:var(--blue);font-weight:600;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 32px}
+.field{margin-bottom:26px;min-width:0}
+.grid2 .field{margin-bottom:0}
+.field>label,.field>.lbl{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.auto-pill{display:none;font-size:12px;font-weight:600;color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent);padding:1px 8px;border-radius:99px}
+.field[data-auto="1"] .auto-pill{display:inline-block}
+.inp{width:100%;background:transparent;border:0;border-bottom:2px solid var(--line);padding:8px 0 9px;font-size:19px;font-weight:500;border-radius:0;transition:border-color .15s}
+.inp:focus{outline:none;border-bottom-color:var(--blue)}
+.inp::placeholder{color:var(--muted);opacity:.55;font-weight:400}
+.inp:focus-visible{outline:none}
+.field.bad .inp{border-bottom-color:var(--bad)}
+.err{min-height:0;font-size:13.5px;color:var(--bad);margin-top:5px;display:none}
+.field.bad .err{display:block}
+.hint{font-size:13.5px;color:var(--muted);margin-top:5px;min-height:0}
+.hint.ok{color:var(--good)}
+.hint:empty{display:none}
+.affix{display:flex;align-items:baseline;gap:2px;border-bottom:2px solid var(--line)}
+.affix:focus-within{border-bottom-color:var(--blue)}
+.field.bad .affix{border-bottom-color:var(--bad)}
+.affix .inp{border:0;padding-inline:0;min-width:0;flex:1;letter-spacing:.06em}
+.affix .pre,.affix .suf{font-size:17px;color:var(--muted);font-weight:500}
+
+.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.choice{display:flex;align-items:center;gap:6px}
+.chip{flex:1;min-width:0;text-align:start;background:var(--chip);border:1.5px solid var(--line);border-radius:6px;padding:11px 14px;font-weight:500;line-height:1.25;transition:background .12s,border-color .12s}
+.chip:hover{border-color:var(--blue)}
+.chip[aria-checked="true"]{background:var(--rail);border-color:var(--rail);color:#fff}
+.chip[aria-checked="true"]::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-inline-end:9px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:var(--chip);max-width:100%}
+.seg .chip{flex:none;border:0;border-radius:0;padding:11px 22px;text-align:center;background:transparent}
+.seg .chip+.chip{border-inline-start:1.5px solid var(--line)}
+.seg .chip[aria-checked="true"]{background:var(--rail)}
+.seg .chip[aria-checked="true"]::before{display:none}
+.field.bad .choices,.field.bad .seg{outline:2px solid var(--bad);outline-offset:3px;border-radius:8px}
+
+.mini-btn{flex:none;width:30px;height:30px;display:none;place-items:center;border:1px solid var(--line);background:var(--sheet);border-radius:6px;color:var(--muted)}
+.mini-btn:hover{color:var(--text);border-color:var(--text)}
+.mini-btn[data-armed]{background:var(--bad);color:#fff;border-color:var(--bad)}
+body.editing .mini-btn{display:grid}
+.add-btn{display:none;align-items:center;gap:8px;border:1.5px dashed var(--blue);background:transparent;color:var(--blue);border-radius:6px;padding:10px 14px;font-weight:600}
+body.editing .add-btn{display:inline-flex}
+
+.combo-selected{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--rail);color:#fff;border-radius:8px;padding:12px 16px;font-weight:600}
+.combo-selected button{background:none;border:0;color:var(--cyan);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.combo-list{margin-top:10px;max-height:236px;overflow-y:auto;border:1.5px solid var(--line);border-radius:8px;background:var(--sheet)}
+.combo-row{display:flex;align-items:center;gap:6px;padding:0 8px 0 0;border-bottom:1px solid var(--line)}
+.combo-row:last-child{border-bottom:0}
+.combo-pick{flex:1;text-align:start;background:none;border:0;padding:11px 16px;font-weight:500}
+.combo-pick:hover{background:var(--chip)}
+.combo-pick mark{background:color-mix(in srgb,var(--cyan) 35%,transparent);color:inherit;border-radius:2px}
+.combo-empty{padding:14px 16px;color:var(--muted);font-size:14px}
+.combo-add{padding:8px}
+
+/* link hero */
+.link-field .linkbox{display:flex;align-items:stretch;border:2px solid var(--text);border-radius:10px;background:var(--sheet);overflow:hidden}
+.link-field.bad .linkbox{border-color:var(--bad)}
+.link-field .linkbox:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px color-mix(in srgb,var(--blue) 20%,transparent)}
+.linkbox input{flex:1;min-width:0;border:0;background:transparent;padding:17px 16px;font-size:16px;font-weight:500;direction:ltr;text-overflow:ellipsis}
+.linkbox input:focus{outline:none}
+.paste-btn{flex:none;display:flex;align-items:center;gap:8px;border:0;border-inline-start:2px solid var(--line);background:var(--chip);padding:0 20px;font-weight:600}
+.paste-btn:hover{background:var(--line)}
+.stack{display:grid;gap:26px 32px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:30px}
+.stack .field{margin:0}
+.span2{grid-column:1/-1}
+.queues{display:flex;flex-direction:column;gap:6px}
+.queues .choice .chip{font-size:14.5px;word-break:break-all;font-family:ui-monospace,"SF Mono",Consolas,monospace;padding:10px 14px}
+.queues .chip .from{font-family:var(--font-ui);font-size:12px;color:var(--cyan);margin-inline-start:8px}
+.stepper{display:inline-flex;align-items:stretch;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sheet)}
+.field.bad .stepper{border-color:var(--bad)}
+.stepper:focus-within{border-color:var(--blue)}
+.stepper button{width:52px;border:0;background:var(--chip);font-size:22px;font-weight:600;line-height:1}
+.stepper button:hover{background:var(--line)}
+.stepper input{width:110px;border:0;text-align:center;font:700 26px/1 var(--font-display);background:transparent;padding:12px 4px;font-variant-numeric:tabular-nums}
+.stepper input:focus{outline:none}
+
+/* dock */
+.dock{position:fixed;left:340px;right:0;bottom:0;background:var(--sheet);border-top:1px solid var(--line);padding:14px clamp(20px,5vw,72px) calc(14px + env(safe-area-inset-bottom,0px));z-index:5}
+.dock-bar{position:absolute;left:0;top:-1px;height:3px;background:linear-gradient(90deg,var(--cyan),var(--blue));width:0;transition:width .3s}
+.dock-inner{max-width:756px;display:flex;align-items:center;gap:20px}
+.dock-count{flex:1;font-size:14px;color:var(--muted)}
+.dock-count b{color:var(--text);font:700 22px/1 var(--font-display);margin-inline-end:4px}
+.submit{display:flex;align-items:center;gap:10px;border:0;border-radius:10px;padding:0 30px;height:54px;font-weight:700;font-size:17px;background:var(--line);color:var(--muted);transition:background .2s,color .2s,transform .1s}
+.submit.ready{background:var(--blue);color:#fff}
+.submit.ready:hover{background:var(--blue-deep)}
+.submit:active{transform:translateY(1px)}
+.submit[aria-busy="true"]{opacity:.7;pointer-events:none}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--rail);color:#fff;padding:12px 20px;border-radius:10px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:20;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--bad)}
+
+dialog{border:0;border-radius:14px;padding:28px;width:min(440px,calc(100vw - 32px));background:var(--sheet);color:var(--text);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(6,12,29,.62)}
+dialog h3{font:700 22px/1.2 var(--font-display);margin:0 0 6px}
+dialog p{margin:0 0 18px;color:var(--muted);font-size:14.5px}
+dialog .inp{margin-bottom:6px}
+.dlg-actions{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;height:48px;border-radius:8px;border:1.5px solid var(--line);background:var(--sheet);font-weight:600}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.dup-id{font:700 24px/1.1 var(--font-display);margin:2px 0 4px;font-variant-numeric:tabular-nums}
+.dup-warn{background:var(--warn-bg);color:var(--warn);padding:12px 14px;border-radius:8px;font-size:14.5px;margin-top:6px}
+
+/* ───────── Mobile ───────── */
+@media (max-width:860px){
+  html{background:var(--rail)}
+  body{background:var(--paper)}
+  .app{display:block}
+  .rail{position:static;height:auto;display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px 16px;padding:18px 18px 18px}
+  .logo{height:32px}
+  .tally{grid-row:1;grid-column:2;text-align:end}
+  .tally-label{display:none}
+  .odo{font-size:34px;gap:4px;justify-content:flex-end}
+  .od{border-radius:6px}
+  .tally-actions{justify-content:flex-end;margin-top:6px;gap:14px}
+  .link-btn{font-size:13px}
+  .recent{display:none}
+  .edit-toggle{margin:0;grid-column:1/-1;justify-content:center;padding:9px 12px;font-size:14px}
+  .sheet{padding:30px 18px 170px}
+  .dock{left:0;padding-inline:18px}
+  .grid2,.stack{grid-template-columns:1fr}
+  .grid2{gap:24px}
+  .span2{grid-column:auto}
+  .choices{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .dock-count span{display:none}
+  .submit{padding:0 22px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+
+/* ═════ Redesign: soft cards, rounded controls ═════ */
+:root{--paper:#F1F4FA;--sheet:#FFFFFF;--chip:#F4F6FB;--line:#DCE3EF;--blue:#2563EB;--blue-deep:#1D4ED8;--rail:#0B1B4D;--rail-2:#16296B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0A1020;--sheet:#101A33;--chip:#16224A;--line:#27345A;--blue:#5A9BFF}}
+:root[data-theme="dark"]{--paper:#0A1020;--sheet:#101A33;--chip:#16224A;--line:#27345A;--blue:#5A9BFF}
+body{background:radial-gradient(900px 420px at 85% -8%,color-mix(in srgb,var(--blue) 14%,transparent),transparent 70%),var(--paper)}
+.app{grid-template-columns:360px minmax(0,1fr)}
+.rail{top:16px;height:calc(100vh - 32px);margin:16px 0 16px 16px;border-radius:24px;background:linear-gradient(165deg,#0F2766 0%,#0B1B4D 55%,#08122F 100%);box-shadow:0 24px 50px -24px rgba(11,27,77,.7)}
+.dock{left:376px;border:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -10px 30px -18px rgba(16,32,80,.35)}
+.sheet{max-width:960px;padding-top:36px}
+.sheet-head h1{font-size:clamp(30px,4vw,40px);font-weight:800}
+.block{background:var(--sheet);border:1px solid var(--line);border-radius:22px;padding:26px 28px 30px;margin-top:22px;box-shadow:0 1px 2px rgba(16,32,80,.05),0 18px 36px -24px rgba(16,32,80,.28)}
+.block h2{font-size:20px;display:flex;align-items:center;gap:10px}
+.block h2::before{content:"";width:6px;height:22px;border-radius:4px;background:linear-gradient(var(--cyan),var(--blue))}
+.inp{background:var(--chip);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:17px}
+.inp:focus{border-color:var(--blue);background:var(--sheet);box-shadow:0 0 0 4px color-mix(in srgb,var(--blue) 16%,transparent)}
+.field.bad .inp{border-color:var(--bad)}
+.affix{background:var(--chip);border:1.5px solid var(--line);border-radius:12px;padding:0 14px;align-items:center}
+.affix:focus-within{border-color:var(--blue);background:var(--sheet);box-shadow:0 0 0 4px color-mix(in srgb,var(--blue) 16%,transparent)}
+.field.bad .affix{border-color:var(--bad)}
+.affix .inp{border:0;background:transparent;box-shadow:none;padding:12px 0}
+.chip{background:var(--sheet);border-radius:999px;padding:9px 16px}
+.chip[aria-checked="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip[aria-checked="true"]::before{background:#fff}
+.seg{border:0;border-radius:999px;padding:4px;gap:4px;background:var(--chip)}
+.seg .chip{border:0;padding:9px 20px}.seg .chip+.chip{border:0}
+.seg .chip[aria-checked="true"]{background:var(--blue)}
+.queues .chip{border-radius:12px}
+.linkbox{border-width:1.5px;border-color:var(--line);border-radius:14px}
+.stepper{border-width:1.5px;border-radius:12px}
+.submit{border-radius:14px}
+.submit.ready{background:linear-gradient(135deg,var(--blue),var(--blue-deep));box-shadow:0 10px 22px -10px var(--blue)}
+.edit-banner,.dup-warn,.preview-note{border-radius:12px}
+dialog{border-radius:20px}
+.btn{border-radius:12px}
+/* QTC cards */
+.qtc-search{margin-bottom:10px}
+.qtc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:290px;overflow-y:auto;padding:2px}
+.qtc-grid .combo-empty{grid-column:1/-1}
+.qtc-card{display:flex;align-items:center;gap:4px;background:var(--sheet);border:1.5px solid var(--line);border-radius:14px;padding-inline-end:6px;transition:border-color .12s,background .12s}
+.qtc-card:hover{border-color:var(--blue);background:var(--chip)}
+.qtc-card.selected{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--sheet))}
+.qtc-pick{flex:1;min-width:0;display:flex;align-items:center;gap:9px;background:none;border:0;padding:11px 10px;text-align:start;font-weight:600;font-size:14.5px}
+.qtc-check{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;color:#fff;line-height:1}
+.qtc-card.selected .qtc-check{background:var(--good);border-color:var(--good)}
+.qtc-name{flex:1;min-width:0;line-height:1.25}
+.role{flex:none;font-size:11px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue)}
+.role.r-sv{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.role.r-ssv{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.qtc-tag-row{margin-top:10px;display:flex;flex-wrap:wrap}
+.qtc-tag{display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--good) 12%,var(--sheet));border:1px solid color-mix(in srgb,var(--good) 40%,transparent);color:var(--good);border-radius:99px;padding:5px 8px 5px 14px;font-weight:600;font-size:14px}
+.qtc-tag button{background:none;border:0;color:inherit;opacity:.7;min-width:22px;min-height:22px}
+.role-pick{margin-top:6px}.role-pick .lbl-s{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+@media (max-width:860px){
+  .rail{margin:0;top:auto;height:auto;border-radius:0 0 22px 22px}
+  .dock{left:0;border-radius:16px 16px 0 0}
+  .block{padding:20px 18px 24px;border-radius:18px;margin-top:16px}
+  .qtc-grid{grid-template-columns:1fr}
+}
+
+.qtc-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.qtc-role{font-size:11.5px;font-weight:600;color:var(--blue);letter-spacing:.02em}
+.role-cycle{display:none;flex:none;border:1px dashed var(--blue);background:transparent;color:var(--blue);border-radius:99px;font-size:11px;font-weight:700;padding:3px 9px}
+body.editing .role-cycle{display:inline-block}
+.qtc-pick{padding:10px 10px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═════ Rail: logo, counter, recent ═════ -->
+  <aside class="rail">
+    <svg class="logo" viewBox="0 0 360 90" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="METI Micro Engineering Tech Inc.">
+      <defs>
+        <linearGradient id="metiChevGrad" x1="0" y1="0" x2="80" y2="70" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#29b6f6"/>
+          <stop offset="55%" stop-color="#1565d8"/>
+          <stop offset="100%" stop-color="#0d2fa8"/>
+        </linearGradient>
+      </defs>
+      <g transform="translate(4,8)">
+        <polygon points="26,0 96,0 70,34 0,34" fill="url(#metiChevGrad)"/>
+        <polygon points="0,40 70,40 44,74 -26,74" fill="url(#metiChevGrad)"/>
+      </g>
+      <g transform="translate(118,0)" font-family="Arial,Helvetica,sans-serif">
+        <text x="0" y="46" font-size="38" font-weight="800" fill="#ffffff" letter-spacing="2">METI</text>
+        <text x="2" y="64" font-size="10.5" font-weight="700" fill="#29b6f6" letter-spacing="1.6">MICRO ENGINEERING TECH INC.</text>
+      </g>
+    </svg>
+
+    <div class="tally">
+      <p class="tally-label">Tasks done</p>
+      <div class="odo" id="odo" role="img" aria-label="Tasks done: 0"></div>
+      <div class="tally-actions">
+        <button type="button" class="link-btn" id="undoBtn">Undo last</button>
+        <button type="button" class="link-btn" id="resetBtn">Reset count</button>
+      </div>
+    </div>
+
+    <div class="recent">
+      <h2>Submitted this session</h2>
+      <ol id="recentList"></ol>
+    </div>
+
+    <button type="button" class="edit-toggle" id="editToggle">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="editIco"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span id="editLabel">Edit lists</span>
+    </button>
+  </aside>
+
+  <!-- ═════ Form sheet ═════ -->
+  <main class="sheet">
+    <header class="sheet-head">
+      <h1>Submit a task</h1>
+      <p dir="auto">الصق لينك التاسك وهو هيملي الـ Task ID والـ Pass والـ Modality والـ Queue لوحده.</p>
+      </header>
+
+    <div class="edit-banner hidden" id="editBanner">
+      <span>Editing lists</span>
+      <span id="saveStatus" class="grow"></span>
+      <button type="button" id="exitEdit">Done</button>
+    </div>
+
+    <!-- Identity -->
+    <section class="block collapsed" id="who" aria-labelledby="whoTitle">
+      <div class="block-head">
+        <h2 id="whoTitle">Your shift</h2>
+      </div>
+      <p class="block-note" dir="auto">بتتسجل مرة واحدة على الجهاز، وبتفضل متحفوظة للتاسكات اللي بعدها.</p>
+      <div class="who-summary" id="whoSummary"></div>
+
+      <div class="who-body">
+        <div class="field" data-f="shift">
+          <div class="lbl" id="l-shift">Shift</div>
+          <div class="choices" id="shiftChoices" role="radiogroup" aria-labelledby="l-shift"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+
+        <div class="field" data-f="unit">
+          <div class="lbl" id="l-unit">Unit</div>
+          <div class="choices" id="unitChoices" role="radiogroup" aria-labelledby="l-unit"></div>
+          <div style="margin-top:10px"><button type="button" class="add-btn" data-add="unit"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add unit</button></div>
+          <div class="err" dir="auto"></div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:26px">
+          <div class="field" data-f="pcNo">
+            <label for="pcNo">PC no.</label>
+            <input class="inp" id="pcNo" data-bind="pcNo" autocomplete="off" placeholder="7 · 42 · SV · Buffer · QTC · SL" maxlength="6">
+            <div class="err" dir="auto"></div>
+          </div>
+          <div class="field" data-f="labelerName">
+            <label for="labelerName">Labeler name</label>
+            <input class="inp" id="labelerName" data-bind="labelerName" autocomplete="name" placeholder="Full name in English">
+            <div class="err" dir="auto"></div>
+          </div>
+          <div class="field" data-f="nationalId">
+            <label for="nationalId">National ID</label>
+            <input class="inp" id="nationalId" data-bind="nationalId" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="14 digits">
+            <div class="hint" dir="auto" id="nidHint"></div>
+            <div class="err" dir="auto"></div>
+          </div>
+          <div class="field" data-f="yubikey">
+            <label for="yubikey">Yubikey</label>
+            <div class="affix">
+              <span class="pre">me</span>
+              <input class="inp" id="yubikey" inputmode="numeric" autocomplete="off" placeholder="000000" aria-describedby="ykHint">
+              <span class="suf">@meti.ai</span>
+            </div>
+            <div class="hint" id="ykHint" dir="auto"></div>
+            <div class="err" dir="auto"></div>
+          </div>
+        </div>
+
+        <div class="field" data-f="qtcShift">
+          <div class="lbl" id="l-qtcShift">QTC shift <span class="auto-pill">from your shift</span></div>
+          <div class="seg" id="qtcShiftChoices" role="radiogroup" aria-labelledby="l-qtcShift"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+
+        <div class="field" data-f="qtcName" style="margin-bottom:6px">
+          <div class="lbl" id="l-qtcName">QTC name</div>
+          <div id="qtcBox"></div>
+          <div class="hint" id="qtcSync" dir="auto"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task -->
+    <section class="block" id="task" aria-labelledby="taskTitle">
+      <div class="block-head"><h2 id="taskTitle">This task</h2></div>
+      <p class="block-note" dir="auto">اللينك لازم يبدأ بـ https://labeling.robot.car/#</p>
+
+      <div class="field link-field" data-f="taskLink" style="margin-bottom:0">
+        <label for="taskLink" class="sr">Task link</label>
+        <div class="linkbox">
+          <input id="taskLink" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://labeling.robot.car/#/tasks/do/…/id/…">
+          <button type="button" class="paste-btn" id="pasteBtn">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></svg>
+            Paste
+          </button>
+        </div>
+        <div class="hint" id="linkHint" dir="auto"></div>
+        <div class="err" dir="auto"></div>
+      </div>
+
+      <div class="stack">
+        <div class="field" data-f="taskId">
+          <label for="taskId">Task ID <span class="auto-pill">auto</span></label>
+          <input class="inp" id="taskId" data-bind="taskId" inputmode="numeric" autocomplete="off" placeholder="Read from the link">
+          <div class="err" dir="auto"></div>
+        </div>
+        <div class="field" data-f="objects">
+          <div class="lbl" id="l-objects">Objects</div>
+          <div class="stepper">
+            <button type="button" id="objMinus" aria-label="One less">−</button>
+            <input id="objects" inputmode="numeric" autocomplete="off" placeholder="0" aria-labelledby="l-objects">
+            <button type="button" id="objPlus" aria-label="One more">+</button>
+          </div>
+          <div class="err" dir="auto"></div>
+        </div>
+        <div class="field" data-f="pass">
+          <div class="lbl" id="l-pass">Pass <span class="auto-pill">auto</span></div>
+          <div class="seg" id="passChoices" role="radiogroup" aria-labelledby="l-pass"></div>
+          <div class="hint" id="passHint" dir="auto"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+        <div class="field" data-f="modality">
+          <div class="lbl" id="l-modality">Modality <span class="auto-pill">auto</span></div>
+          <div class="seg" id="modalityChoices" role="radiogroup" aria-labelledby="l-modality"></div>
+          <div class="err" dir="auto"></div>
+        </div>
+        <div class="field span2" data-f="queueName">
+          <div class="lbl" id="l-queue">Queue <span class="auto-pill">auto</span></div>
+          <div class="queues" id="queueChoices" role="radiogroup" aria-labelledby="l-queue"></div>
+          <div style="margin-top:10px"><button type="button" class="add-btn" data-add="queue"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add queue</button></div>
+          <div class="err" dir="auto"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Dock -->
+<div class="dock">
+  <div class="dock-bar" id="dockBar"></div>
+  <div class="dock-inner">
+    <div class="dock-count"><b id="dockNum">0</b>of 14 filled <span id="dockNext"></span></div>
+    <button type="button" class="submit" id="submitBtn">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+      <span id="submitLabel">Submit task</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- PIN dialog -->
+<dialog id="pinDlg">
+  <h3>Edit lists</h3>
+  <p dir="auto">ادخل الـ Password عشان تعدل الأسماء والـ Queues والـ Units.</p>
+  <input class="inp" id="pinInput" type="password" autocomplete="current-password" placeholder="Password">
+  <div class="err" id="pinErr" style="display:block;min-height:20px" dir="auto"></div>
+  <div class="dlg-actions">
+    <button type="button" class="btn" id="pinCancel">Cancel</button>
+    <button type="button" class="btn primary" id="pinOk">Unlock</button>
+  </div>
+</dialog>
+
+<!-- Add / rename dialog -->
+<dialog id="addDlg">
+  <h3 id="addTitle">Add</h3>
+  <p dir="auto" id="addHint"></p>
+  <input class="inp" id="addInput" autocomplete="off">
+  <div class="role-pick hidden" id="rolePick"><span class="lbl-s">Label</span><div class="seg" id="roleSeg" role="radiogroup" aria-label="Label"></div></div>
+  <div class="err" id="addErr" style="display:block;min-height:20px" dir="auto"></div>
+  <div class="dlg-actions">
+    <button type="button" class="btn" id="addCancel">Cancel</button>
+    <button type="button" class="btn primary" id="addOk">Save</button>
+  </div>
+</dialog>
+
+<!-- Duplicate dialog -->
+<dialog id="dupDlg">
+  <h3>Already submitted</h3>
+  <div class="dup-id" id="dupId">—</div>
+  <p id="dupWhen" style="margin-bottom:10px"></p>
+  <div class="dup-warn" dir="auto">لو ده غلط وإنت متأكد إن ده Task جديد، بلّغ الـ QC ومتبعتوش تاني.</div>
+  <div class="dlg-actions"><button type="button" class="btn primary" id="dupOk">Check the link</button></div>
+</dialog>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   SETUP — paste your Apps Script Web App URL here.
+   Leave it empty to run in preview mode (nothing is sent).
+   Same protocol as the Spot Check form:
+     GET  ?action=getConfig            → {success, config}
+     GET  ?action=verifyPin&pin=…      → {success}
+     POST {action:'saveConfig',pin,config}
+     POST {action:'submitTask', …fields}  → {success, message, duplicate?, date?, time?}
+   ════════════════════════════════════════════════════════════ */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUon6tDiedohWYXi-m8bpybC5c8JaN75_hx11O9xcmTQ_rwINL3x6070dywV-DbcLc/exec";
+const DEMO = !APPS_SCRIPT_URL;
+const DEMO_PIN = "Intake2026";
+
+const DEFAULT_CONFIG = {
+  shifts: ["Morning","Night","Over Night","Morning 12 H","Over Night 12 H","Over Shift (M)","Over Shift (N)","Over Shift (ON)"],
+  units: ["NC Room 106","NC Room 102","NC Room 108","2ND Floor (SF)","4TH Floor (SF)"],
+  queues: [
+    "v4_sc3_full_scene_3d_lanes_parallel_labeling",
+    "mpg_sc3_full_scene_mapless_3d_lanes",
+    "sc3_full_scene_highway_mapless_filtered_3d_lanes",
+    "sc3_full_scene_highway_lanes_first_lidar_labeling",
+    "sc3_full_scene_highway_lidar_only_labeling",
+    "sc3_full_scene_lane_lidar_parallel_labeling",
+    "gs_sc3_full_scene_mapless_3d_only",
+    "r2s_sc3_3d_labeling",
+    "alpine_sc3_full_scene_3d_lanes_parallel_labeling"
+  ],
+  /* Same layout as the sheet tabs "Morning QTC" / "Night QTC" / "Over Night QTC": columns Name, Role.
+     Preview only — the live form reads these tabs from the Backup sheet. */
+  personnel: {
+    M:  { qtc: [] },
+    N:  { qtc: [] },
+    ON: { qtc: [{"name": "Omar Sharawy (ON)", "role": "QT"}, {"name": "Mohamed Ibrahim (ON)", "role": "QT"}, {"name": "Hesham Nasser (ON)", "role": "QT"}, {"name": "Mohamed Emam (ON)", "role": "QT"}, {"name": "Seif Waled (ON)", "role": "QT"}, {"name": "El Noby (ON)", "role": ""}, {"name": "Bahi Hussien (ON)", "role": ""}, {"name": "Abd El Rahman Ibrahiem (ON)", "role": ""}, {"name": "Ahmed Nagia (ON)", "role": ""}, {"name": "Abdalla Barbary (ON)", "role": ""}, {"name": "Mohamed Zakaria (ON)", "role": ""}, {"name": "Samer Neseim (ON)", "role": ""}, {"name": "Eyad Mohamed (ON)", "role": ""}, {"name": "Mahmoud Khaled Hussien (ON)", "role": ""}, {"name": "Mohamed Nasr (ON)", "role": ""}, {"name": "Shreif Hossam (ON)", "role": ""}, {"name": "Mohamed Sobhy (ON)", "role": ""}, {"name": "Youssef Reda (ON)", "role": ""}, {"name": "Mohamed Mostafa Mohamed (ON)", "role": ""}, {"name": "Yousef Fathy (ON)", "role": ""}, {"name": "Yousef Saad (ON)", "role": ""}, {"name": "Ahmed Samir Mohamed (ON)", "role": ""}, {"name": "Mostafa Mahmoud Mohamed (ON)", "role": ""}, {"name": "Mahmoud Ahmed Salama (ON)", "role": ""}, {"name": "Medhat Mohamed Fathy (ON)", "role": ""}, {"name": "Karim Mohamed (ON)", "role": ""}, {"name": "Amr Wael Sayed (ON)", "role": ""}, {"name": "Mohamed Hafez (ON)", "role": ""}, {"name": "Mohamed Fathy (ON)", "role": ""}, {"name": "Mostafa Fayez (ON)", "role": ""}] }
+  }
+};
+
+/* Task link rules (same as Spot Check) */
+const LINK_PATTERN = /^https:\/\/labeling\.robot\.car\/#\/tasks\/do\/[A-Za-z0-9_]+\/id\/\d+(\/queue\/[^\/?#]+)?(\/frame\/.*)?$/i;
+const TASK_TYPE_RULES = [
+  { match:/^sellivandar2dqa$/i,  pass:'QA', modality:'Lidar' },
+  { match:/^sellivandar2d$/i,    pass:'FP', modality:'Lidar' },
+  { match:/^sellmslqa$/i,        pass:'QA', modality:null },
+  { match:/^sellmsl$/i,          pass:'FP', modality:null },
+  { match:/^sellmappingqa$/i,    pass:'QA', modality:'Lane Line' },
+  { match:/^sellmapping$/i,      pass:'FP', modality:'Lane Line' },
+  { match:/^sellrelabelingqa$/i, pass:'QA', modality:null },
+  { match:/^sellrelabeling$/i,   pass:'FP', modality:null }
+];
+const ROLES = ['QT','SV','SSV'];
+const QTC_FOR_SHIFT = s => /\(ON\)|over night/i.test(s) ? 'ON' : /\(N\)|^night/i.test(s) ? 'N' : 'M';
+
+/* ───── helpers ───── */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+function h(tag, props = {}, ...kids){
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)){
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => c != null && e.append(c));
+  return e;
+}
+const ICON = {
+  pencil:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
+  x:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="width:14px;height:14px"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  plus:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>'
+};
+function iconBtn(kind, label, onclick){
+  const b = h('button', { type:'button', class:'mini-btn', 'aria-label':label, title:label, onclick });
+  b.innerHTML = ICON[kind]; return b;
+}
+function armed(btn, action){           // two-tap confirm for destructive actions
+  if (btn.dataset.armed){ clearTimeout(btn._t); delete btn.dataset.armed; action(); return; }
+  btn.dataset.armed = '1'; btn._t = setTimeout(() => delete btn.dataset.armed, 2600);
+}
+
+/* ───── state ───── */
+const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','modality','queueName','objects'];
+const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey'];
+const SAVED = ['shift','unit','pcNo','labelerName','qtcShift','qtcName','yubikey'];   // National ID is never kept on the device
+const S = Object.fromEntries(FIELDS.map(f => [f, '']));
+const auto = { taskId:false, pass:false, modality:false, queueName:false, qtcShift:false };
+const touched = {};
+let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); 
+let linkQueue = '';            // queue found in the link but missing from the list
+let editMode = false, sessionPin = '', busy = false, attempted = false;
+
+const PC_WORDS = ['SV','Buffer','QTC','SL'];
+function normPc(raw){
+  let v = String(raw || '').trim();
+  if (/^\d/.test(v)) return v.replace(/\D/g, '').slice(0, 2);
+  const w = PC_WORDS.find(x => x.toLowerCase() === v.replace(/[^a-z]/gi, '').toLowerCase());
+  return w || v.replace(/[^a-z]/gi, '').slice(0, 6);
+}
+const validators = {
+  shift: v => v ? '' : 'اختار الشيفت',
+  unit: v => v ? '' : 'اختار الـ Unit',
+  pcNo: v => !v ? 'اكتب رقم الـ PC' : (/^\d{1,2}$/.test(v) || PC_WORDS.includes(v)) ? '' : 'رقم من 1 أو 2 خانة بس، أو واحدة من: SV, Buffer, QTC, SL',
+  labelerName: v => /^[A-Za-z][A-Za-z .'\-]{2,}$/.test(v.trim()) ? '' : 'اسمك باللغه الانجليزيه',
+  nationalId: v => /^\d{14}$/.test(v) ? '' : 'الرقم القومي لازم يكون 14 رقم بالظبط',
+  qtcShift: v => v ? '' : 'اختار شيفت الـ QTC',
+  qtcName: v => v ? '' : 'اختار اسم الـ QTC',
+  yubikey: v => /^me\d{6}@meti\.ai$/i.test(v) ? '' : 'الـ Yubikey لازم يكون 6 أرقام',
+  taskLink: v => !v ? 'الصق لينك التاسك'
+              : /[\u0600-\u06FF]/.test(v) ? 'اللينك مش بيقبل حروف عربية'
+              : !LINK_PATTERN.test(v) ? 'اللينك لازم يكون لينك تاسك من labeling.robot.car'
+              : '',
+  taskId: v => /^\d{10,}$/.test(v) ? '' : 'الـ Task ID لازم يكون 10 أرقام على الأقل',
+  pass: v => v ? '' : 'اختار FP أو QA',
+  modality: v => v ? '' : 'اختار الـ Modality',
+  queueName: v => v ? '' : 'اختار الـ Queue',
+  objects: v => /^\d+$/.test(String(v)) ? '' : 'اكتب عدد الـ Objects'
+};
+
+/* ───── persistence ───── */
+function loadSaved(){
+  const saved = store.get('meti-backup-identity', {});
+  SAVED.forEach(f => { if (typeof saved[f] === 'string') S[f] = f === 'pcNo' ? normPc(saved[f]) : saved[f]; });
+}
+function persistIdentity(){
+  const o = {}; SAVED.forEach(f => o[f] = S[f]); store.set('meti-backup-identity', o);
+}
+
+/* ───── field plumbing ───── */
+function fieldEl(f){ return document.querySelector(`.field[data-f="${f}"]`); }
+function showErr(f){
+  const el = fieldEl(f); if (!el) return;
+  const msg = validators[f](S[f]);
+  const show = (touched[f] || attempted) && !!msg;
+  el.classList.toggle('bad', show);
+  const e = el.querySelector('.err'); if (e) e.textContent = show ? msg : '';
+}
+function setAuto(f, on){
+  auto[f] = on;
+  const el = fieldEl(f); if (el) el.dataset.auto = on ? '1' : '0';
+}
+function setVal(f, v, fromUser = false){
+  S[f] = v;
+  if (fromUser && auto[f] !== undefined) setAuto(f, false);
+  if (SAVED.includes(f)) persistIdentity();
+  showErr(f); progress();
+}
+
+/* ───── choice groups ───── */
+function renderChoices(box, options, field, { editType, ctx } = {}){
+  box.replaceChildren();
+  options.forEach(opt => {
+    const label = typeof opt === 'string' ? opt : opt.label;
+    const value = typeof opt === 'string' ? opt : opt.value;
+    const chip = h('button', { type:'button', class:'chip', role:'radio', 'aria-checked': String(S[field] === value), onclick: () => {
+      setVal(field, S[field] === value && field !== 'pass' ? '' : value, true);
+      touched[field] = true;
+      afterPick(field);
+    }});
+    chip.append(label);
+    if (typeof opt !== 'string' && opt.from) chip.append(h('span', { class:'from', text:'from link' }));
+    if (editType){
+      box.append(h('div', { class:'choice' }, chip,
+        iconBtn('pencil', 'Rename', () => openAdd({ mode:'rename', type:editType, ctx, old:value })),
+        iconBtn('x', 'Delete (tap twice)', function(){ armed(this, () => deleteItem(editType, ctx, value)); })));
+    } else box.append(chip);
+  });
+}
+function afterPick(field){
+  if (field === 'shift'){
+    const q = QTC_FOR_SHIFT(S.shift);
+    if (!S.qtcShift || auto.qtcShift){ S.qtcShift = q; setAuto('qtcShift', true); S.qtcName = ''; persistIdentity(); renderQtcShift(); renderQtc(); }
+    renderShift();
+  }
+  if (field === 'unit') renderUnits();
+  if (field === 'qtcShift'){ S.qtcName = ''; persistIdentity(); renderQtcShift(); renderQtc(); }
+  if (field === 'pass'){ renderPass(); passHint(); }
+  if (field === 'modality') renderModality();
+  if (field === 'queueName') renderQueues();
+}
+const renderShift = () => renderChoices($('#shiftChoices'), CONFIG.shifts, 'shift');
+const renderUnits = () => renderChoices($('#unitChoices'), CONFIG.units, 'unit', { editType:'unit' });
+const renderQtcShift = () => renderChoices($('#qtcShiftChoices'), [{label:'Morning',value:'M'},{label:'Night',value:'N'},{label:'Over Night',value:'ON'}], 'qtcShift');
+const renderPass = () => renderChoices($('#passChoices'), ['FP','QA'], 'pass');
+const renderModality = () => renderChoices($('#modalityChoices'), ['Lidar','Lane Line'], 'modality');
+function renderQueues(){
+  const list = CONFIG.queues.map(q => ({ label:q, value:q }));
+  if (linkQueue && !CONFIG.queues.includes(linkQueue)) list.unshift({ label:linkQueue, value:linkQueue, from:true });
+  renderChoices($('#queueChoices'), list, 'queueName', { editType: editMode ? 'queue' : null });
+  // temp queue from the link can't be renamed/deleted; keep controls only for saved ones
+  $$('#queueChoices .choice').forEach(c => { if (c.querySelector('.from')) c.querySelectorAll('.mini-btn').forEach(b => b.remove()); });
+}
+function passHint(){
+  const el = $('#passHint'); const det = $('#taskLink')._passFromLink;
+  el.textContent = (det && S.pass && S.pass !== det) ? `⚠ الـ Pass مختلف عن اللي في اللينك (${det})` : '';
+}
+
+/* ───── QTC name picker (cards + role label, like the Tracker form) ───── */
+let qtcQuery = '';
+function normPeople(list){
+  return (list || []).map(x => typeof x === 'string' ? { name:x.trim(), role:'', local:false }
+    : { name:String(x.name || '').trim(), role:String(x.role || '').trim(), local:!!x.local }).filter(x => x.name);
+}
+function normalizeCfg(){ ['M','N','ON'].forEach(k => { const p = (CONFIG.personnel[k] ||= { qtc:[] }); p.qtc = normPeople(p.qtc); }); }
+function renderQtc(){
+  const box = $('#qtcBox'); box.replaceChildren();
+  if (!S.qtcShift){ box.append(h('div', { class:'combo-empty', dir:'auto', text:'اختار شيفت الـ QTC الأول عشان تظهر الأسماء.' })); return; }
+  const people = CONFIG.personnel[S.qtcShift]?.qtc || [];
+  const search = h('input', { class:'inp qtc-search', placeholder:'Search name…', value:qtcQuery, 'aria-label':'Search QTC name', autocomplete:'off',
+    oninput: e => { qtcQuery = e.target.value; fillList(); } });
+  const grid = h('div', { class:'qtc-grid', role:'listbox', 'aria-label':'QTC names' });
+  const tag = h('div', { class:'qtc-tag-row' });
+  box.append(search);
+  if (editMode) box.append(h('div', { style:'margin-top:10px' }, addBtn('Add name', () => openAdd({ mode:'add', type:'qtc', ctx:S.qtcShift }))));
+  box.append(grid, tag);
+  const badge = r => r ? h('span', { class:'role r-' + r.toLowerCase().replace(/[^a-z]/g, ''), text:r }) : null;
+  void badge;
+  function renderTag(){
+    tag.replaceChildren(); if (!S.qtcName) return;
+    const p = people.find(x => x.name === S.qtcName);
+    tag.append(h('div', { class:'qtc-tag' }, S.qtcName, p && badge(p.role),
+      h('button', { type:'button', 'aria-label':'Clear', text:'✕', onclick:() => { touched.qtcName = true; setVal('qtcName', ''); fillList(); renderTag(); } })));
+  }
+  function fillList(){
+    grid.replaceChildren();
+    const q = qtcQuery.trim().toLowerCase();
+    const hits = people.filter(p => p.name.toLowerCase().includes(q));
+    if (!hits.length) grid.append(h('div', { class:'combo-empty', dir:'auto', text:'مفيش اسم بالشكل ده.' }));
+    hits.forEach(p => {
+      const sel = S.qtcName === p.name;
+      grid.append(h('div', { class:'qtc-card' + (sel ? ' selected' : '') },
+        h('button', { type:'button', class:'qtc-pick', role:'option', 'aria-selected':String(sel), onclick:() => { touched.qtcName = true; setVal('qtcName', sel ? '' : p.name); fillList(); renderTag(); } },
+          h('span', { class:'qtc-check', text: sel ? '✓' : '' }), h('span', { class:'qtc-txt' }, h('span', { class:'qtc-name', text:p.name }), p.role ? h('span', { class:'qtc-role', text:p.role }) : null)),
+        h('button', { type:'button', class:'role-cycle', title:'Change label', text:p.role || '+ label', onclick:() => cycleRole(S.qtcShift, p.name) }),
+        iconBtn('pencil', 'Edit', () => openAdd({ mode:'rename', type:'qtc', ctx:S.qtcShift, old:p.name, role:p.role })),
+        iconBtn('x', 'Delete (tap twice)', function(){ armed(this, () => deleteItem('qtc', S.qtcShift, p.name)); })));
+    });
+  }
+  fillList(); renderTag();
+}
+function cycleRole(ctx, name){
+  const list = CONFIG.personnel[ctx].qtc; const it = list.find(x => x.name === name); if (!it) return;
+  const order = ['', ...ROLES]; it.role = order[(order.indexOf(it.role) + 1) % order.length]; it.local = true;
+  renderQtc(); saveConfig();
+}
+function addBtn(label, onclick){
+  const b = h('button', { type:'button', class:'add-btn', onclick }); b.innerHTML = ICON.plus; b.append(label); b.style.display = 'inline-flex'; return b;
+}
+
+/* ───── identity summary / collapse ───── */
+function identityValid(){ return IDENTITY.every(f => !validators[f](S[f])); }
+function renderSummary(){
+  const box = $('#whoSummary'); box.replaceChildren();
+  [['', S.shift], ['', S.unit], ['PC', S.pcNo], ['', S.labelerName], ['QTC', S.qtcName]].forEach(([k, v]) => {
+    const s = h('span'); if (k) s.append(h('small', { text:k })); s.append(v); box.append(s);
+  });
+  box.append(h('button', { type:'button', class:'text-btn', text:'Change', onclick:() => collapseWho(false) }));
+}
+function collapseWho(c){
+  const w = $('#who');
+  if (c) renderSummary();
+  w.classList.toggle('collapsed', c);
+}
+
+/* ───── progress / dock ───── */
+function progress(){
+  const filled = FIELDS.filter(f => !validators[f](S[f])).length;
+  $('#dockNum').textContent = filled;
+  $('#dockBar').style.width = (filled / FIELDS.length * 100) + '%';
+  $('#submitBtn').classList.toggle('ready', filled === FIELDS.length);
+  const next = FIELDS.find(f => validators[f](S[f]));
+  $('#dockNext').textContent = next ? '' : '';
+}
+
+/* ───── task link auto-read ───── */
+function cleanLink(v){
+  v = v.trim(); const i = v.search(/\/frame(\/|$)/i); return i !== -1 ? v.slice(0, i) : v;
+}
+function onLink(raw, fromBlur = false){
+  const input = $('#taskLink');
+  const v = cleanLink(raw);
+  if (fromBlur || v !== raw) input.value = v;
+  S.taskLink = v;
+  const hint = $('#linkHint');
+  hint.className = 'hint';
+  ['taskId','pass','modality','queueName'].forEach(f => { if (auto[f]) { S[f] = ''; setAuto(f, false); } });
+  linkQueue = ''; input._passFromLink = '';
+  if (!v){ hint.textContent = ''; syncAutoUI(); showErr('taskLink'); progress(); return; }
+  const bad = validators.taskLink(v);
+  if (bad){ hint.textContent = ''; if (fromBlur) touched.taskLink = true; showErr('taskLink'); syncAutoUI(); progress(); return; }
+
+  const id = (v.match(/\/id\/(\d+)/i) || [])[1] || '';
+  if (id){ S.taskId = id; setAuto('taskId', true); $('#taskId').value = id; }
+  const type = decodeURIComponent((v.match(/\/tasks\/do\/([^\/?#]+)/i) || [])[1] || '');
+  const rule = TASK_TYPE_RULES.find(r => r.match.test(type));
+  let pass = rule ? rule.pass : (/qa/i.test(v) ? 'QA' : 'FP');
+  S.pass = pass; setAuto('pass', true); input._passFromLink = pass;
+  if (rule && rule.modality){ S.modality = rule.modality; setAuto('modality', true); }
+  const qm = v.match(/\/queue\/([^\/?#]+)/i);
+  if (qm){
+    const q = decodeURIComponent(qm[1]);
+    if (!CONFIG.queues.includes(q)) linkQueue = q;
+    S.queueName = q; setAuto('queueName', true);
+  }
+  hint.textContent = 'اللينك سليم — اتقرا الـ ID والـ Pass'+(S.modality?' والـ Modality':'')+(S.queueName?' والـ Queue':'')+'.';
+  hint.classList.add('ok');
+  syncAutoUI(); touched.taskLink = true; showErr('taskLink'); progress();
+}
+function syncAutoUI(){
+  renderPass(); renderModality(); renderQueues(); passHint();
+  $('#taskId').value = S.taskId;
+  ['taskId','pass','modality','queueName'].forEach(f => { showErr(f); });
+}
+
+/* ───── counter + recent ───── */
+let session = store.get('meti-backup-session', { count:0, log:[] });
+const doneIds = store.get('meti-backup-ids', {});     // taskId → ISO time
+function renderOdo(){
+  const digits = String(session.count).padStart(3, '0');
+  const odo = $('#odo');
+  while (odo.children.length < digits.length){
+    const strip = h('span', { class:'od-strip' });
+    for (let i = 0; i < 10; i++) strip.append(h('span', { text:String(i) }));
+    odo.prepend(h('span', { class:'od' }, strip));
+  }
+  [...odo.children].forEach((col, i) => {
+    const d = Number(digits[digits.length - odo.children.length + i] ?? 0);
+    col.firstChild.style.transform = `translateY(${-d * 10}%)`;
+  });
+  odo.setAttribute('aria-label', 'Tasks done: ' + session.count);
+}
+function renderRecent(){
+  const ol = $('#recentList'); ol.replaceChildren();
+  if (!session.log.length){ ol.append(h('li', { class:'empty', text:'Nothing submitted yet.' })); return; }
+  session.log.slice(0, 6).forEach(e => ol.append(h('li', {},
+    h('time', { text:e.t }), h('span', { class:'rid', text:e.id }), h('span', { class:'rmeta', text:`${e.pass} · ${e.obj} obj` }))));
+}
+function saveSession(){ store.set('meti-backup-session', session); }
+
+$('#undoBtn').addEventListener('click', () => {
+  if (!session.count) return;
+  const last = session.log.shift(); session.count--; if (last) delete doneIds[last.id];
+  store.set('meti-backup-ids', doneIds); saveSession(); renderOdo(); renderRecent(); toast('Last task removed from the count');
+});
+$('#resetBtn').addEventListener('click', function(){
+  if (!this.dataset.armed){ this.dataset.armed = '1'; this.textContent = 'Tap again to reset'; this._t = setTimeout(() => { delete this.dataset.armed; this.textContent = 'Reset count'; }, 2800); return; }
+  clearTimeout(this._t); delete this.dataset.armed; this.textContent = 'Reset count';
+  session = { count:0, log:[] }; saveSession(); renderOdo(); renderRecent();
+});
+
+/* ───── submit ───── */
+function toast(msg, isErr = false){
+  const t = $('#toast'); t.textContent = msg; t.classList.toggle('err', isErr); t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+function showDup(id, when){
+  $('#dupId').textContent = id; $('#dupWhen').textContent = when ? 'Submitted ' + when : 'This task is already in the database.';
+  $('#dupDlg').showModal();
+}
+$('#dupOk').addEventListener('click', () => { $('#dupDlg').close(); $('#taskLink').focus(); });
+
+function resetTask(){
+  ['taskLink','taskId','pass','modality','queueName','objects'].forEach(f => { S[f] = ''; touched[f] = false; });
+  ['taskId','pass','modality','queueName'].forEach(f => setAuto(f, false));
+  linkQueue = ''; $('#taskLink')._passFromLink = '';
+  $('#taskLink').value = ''; $('#taskId').value = ''; $('#objects').value = ''; $('#linkHint').textContent = '';
+  attempted = false;
+  FIELDS.forEach(showErr);
+  renderPass(); renderModality(); renderQueues(); passHint();
+}
+
+async function submit(){
+  if (busy) return;
+  attempted = true; FIELDS.forEach(showErr);
+  const firstBad = FIELDS.find(f => validators[f](S[f]));
+  if (firstBad){
+    if (IDENTITY.includes(firstBad)) collapseWho(false);
+    const el = fieldEl(firstBad);
+    el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth', block:'center' });
+    toast('Complete the highlighted field first', true); return;
+  }
+  if (doneIds[S.taskId]){ showDup(S.taskId, new Date(doneIds[S.taskId]).toLocaleString()); return; }
+
+  busy = true; const btn = $('#submitBtn'); btn.setAttribute('aria-busy','true'); $('#submitLabel').textContent = 'Submitting…';
+  const payload = { action:'submitTask', timestamp:new Date().toISOString(), ...S, stage:S.pass };
+  try {
+    let res;
+    if (DEMO){ await sleep(700); res = { success:true }; }
+    else {
+      const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(payload) });
+      res = await r.json();
+    }
+    if (res.duplicate){ showDup(S.taskId, [res.date, res.time].filter(Boolean).join(' ')); }
+    else if (res.success){
+      const now = new Date();
+      session.count++;
+      session.log.unshift({ t:now.toTimeString().slice(0,5), id:S.taskId, pass:S.pass, obj:S.objects });
+      doneIds[S.taskId] = now.toISOString(); store.set('meti-backup-ids', doneIds);
+      saveSession(); renderOdo(); renderRecent();
+      toast(`Task ${S.taskId} submitted`);
+      resetTask(); collapseWho(true); progress();
+      $('#task').scrollIntoView({ block:'start' }); $('#taskLink').focus({ preventScroll:true });
+    } else toast(res.message || 'Submit failed — try again', true);
+  } catch (e){
+    toast('No connection. Check the network and try again.', true);
+  } finally {
+    busy = false; btn.removeAttribute('aria-busy'); $('#submitLabel').textContent = 'Submit task';
+  }
+}
+$('#submitBtn').addEventListener('click', submit);
+
+/* ───── edit mode (PIN + lists) ───── */
+const pinDlg = $('#pinDlg');
+$('#editToggle').addEventListener('click', () => {
+  if (editMode) return exitEdit();
+  $('#pinInput').value = ''; $('#pinErr').textContent = ''; pinDlg.showModal(); setTimeout(() => $('#pinInput').focus(), 40);
+});
+$('#pinCancel').addEventListener('click', () => pinDlg.close());
+$('#pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
+$('#pinOk').addEventListener('click', submitPin);
+async function submitPin(){
+  const pin = $('#pinInput').value; if (!pin) return;
+  const btn = $('#pinOk'); btn.disabled = true; btn.textContent = 'Checking…';
+  try {
+    let ok;
+    if (DEMO) ok = pin === DEMO_PIN;
+    else { const r = await fetch(APPS_SCRIPT_URL + '?action=verifyPin&pin=' + encodeURIComponent(pin)); ok = (await r.json()).success; }
+    if (ok){ sessionPin = pin; pinDlg.close(); enterEdit(); }
+    else $('#pinErr').textContent = 'الـ Password غلط';
+  } catch { $('#pinErr').textContent = 'مفيش اتصال — جرب تاني'; }
+  btn.disabled = false; btn.textContent = 'Unlock';
+}
+function setLockIcon(open){ $('#editIco').innerHTML = open ? ICON.unlock : ICON.lock; }
+function enterEdit(){
+  editMode = true; document.body.classList.add('editing');
+  $('#editBanner').classList.remove('hidden'); $('#editLabel').textContent = 'Exit edit'; setLockIcon(true);
+  collapseWho(false); renderUnits(); renderQueues(); renderQtc();
+}
+function exitEdit(){
+  editMode = false; sessionPin = ''; document.body.classList.remove('editing');
+  $('#editBanner').classList.add('hidden'); $('#editLabel').textContent = 'Edit lists'; setLockIcon(false);
+  renderUnits(); renderQueues(); renderQtc();
+}
+$('#exitEdit').addEventListener('click', exitEdit);
+$$('[data-add]').forEach(b => b.addEventListener('click', () => openAdd({ mode:'add', type:b.dataset.add })));
+
+let saveTimer;
+function saveStatus(msg, bad = false){
+  const el = $('#saveStatus'); el.textContent = msg; el.style.color = bad ? 'var(--bad)' : '';
+  clearTimeout(saveStatus._t); if (msg && !msg.endsWith('…')) saveStatus._t = setTimeout(() => el.textContent = '', 3000);
+}
+async function saveConfig(){
+  saveStatus('Saving…');
+  if (DEMO){ store.set('meti-backup-config', CONFIG); saveStatus('Saved on this device (preview)'); return; }
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify({ action:'saveConfig', pin:sessionPin, config:CONFIG }) });
+    const d = await r.json(); d.success ? saveStatus('Saved for everyone') : saveStatus('Save failed', true);
+  } catch { saveStatus('No connection — not saved', true); }
+}
+
+const addDlg = $('#addDlg'); let pending = null;
+const ADD_TEXT = {
+  qtc:   { add:'Add QTC name', rename:'Edit QTC', hint:'الاسم كامل + اختار الـ Label (QT / SV / SSV)' },
+  queue: { add:'Add queue', rename:'Rename queue', hint:'اسم الـ queue كامل (من غير مسافات)' },
+  unit:  { add:'Add unit', rename:'Rename unit', hint:'مثال: NC Room 110' }
+};
+let pendingRole = '';
+function renderRoleSeg(){
+  const seg = $('#roleSeg'); seg.replaceChildren();
+  ['', ...ROLES].forEach(r => seg.append(h('button', { type:'button', class:'chip', role:'radio', 'aria-checked':String(pendingRole === r), text:r || 'None',
+    onclick:() => { pendingRole = r; renderRoleSeg(); } })));
+}
+function openAdd(p){
+  pending = p;
+  pendingRole = p.role || ''; $('#rolePick').classList.toggle('hidden', p.type !== 'qtc'); if (p.type === 'qtc') renderRoleSeg();
+  const t = ADD_TEXT[p.type];
+  $('#addTitle').textContent = p.mode === 'add' ? t.add + (p.type === 'qtc' ? ` · ${p.ctx}` : '') : t.rename;
+  $('#addHint').textContent = t.hint; $('#addErr').textContent = '';
+  $('#addInput').value = p.old || ''; addDlg.showModal();
+  setTimeout(() => { $('#addInput').focus(); $('#addInput').select(); }, 40);
+}
+$('#addCancel').addEventListener('click', () => addDlg.close());
+$('#addInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitAdd(); });
+$('#addOk').addEventListener('click', submitAdd);
+function listFor(type, ctx){
+  if (type === 'qtc') return (CONFIG.personnel[ctx] ||= { qtc:[] }).qtc;
+  return type === 'queue' ? CONFIG.queues : CONFIG.units;
+}
+function submitAdd(){
+  const { mode, type, ctx, old } = pending;
+  let val = $('#addInput').value.trim();
+  if (type === 'queue') val = val.replace(/\s+/g, '_');
+  if (!val){ $('#addErr').textContent = 'اكتب الاسم الأول'; return; }
+  const list = listFor(type, ctx);
+  if (type === 'qtc'){
+    if (list.some(x => x.name.toLowerCase() === val.toLowerCase() && x.name !== old)){ $('#addErr').textContent = 'الاسم ده موجود بالفعل'; return; }
+    if (mode === 'add') list.push({ name:val, role:pendingRole, local:true });
+    else { const it = list.find(x => x.name === old); if (it){ if (!it.local && it.name !== val) it.orig = it.name; it.name = val; it.role = pendingRole; it.local = true; } if (S.qtcName === old) setVal('qtcName', val); }
+    addDlg.close(); rerenderList('qtc'); saveConfig(); return;
+  }
+  if (list.some(x => x.toLowerCase() === val.toLowerCase() && x !== old)){ $('#addErr').textContent = 'الاسم ده موجود بالفعل'; return; }
+  if (mode === 'add') list.push(val);
+  else {
+    list[list.indexOf(old)] = val;
+    const f = type === 'qtc' ? 'qtcName' : type === 'queue' ? 'queueName' : 'unit';
+    if (S[f] === old) setVal(f, val);
+  }
+  addDlg.close(); rerenderList(type); saveConfig();
+}
+function deleteItem(type, ctx, val){
+  const list = listFor(type, ctx);
+  list.splice(type === 'qtc' ? list.findIndex(x => x.name === val) : list.indexOf(val), 1);
+  const f = type === 'qtc' ? 'qtcName' : type === 'queue' ? 'queueName' : 'unit';
+  if (S[f] === val) setVal(f, '');
+  rerenderList(type); saveConfig();
+}
+function rerenderList(type){ type === 'qtc' ? renderQtc() : type === 'queue' ? renderQueues() : renderUnits(); progress(); }
+
+/* ───── input bindings ───── */
+$$('[data-bind]').forEach(inp => {
+  const f = inp.dataset.bind;
+  inp.addEventListener('input', () => {
+    let v = inp.value;
+    if (f === 'pcNo'){ v = normPc(v); inp.value = v; }
+    if (f === 'nationalId' || f === 'taskId'){ v = v.replace(/\D/g, ''); inp.value = v; }
+    if (f === 'nationalId') $('#nidHint').textContent = v.length && v.length < 14 ? `${v.length} / 14` : '';
+    setVal(f, v, true);
+  });
+  inp.addEventListener('blur', () => { touched[f] = true; showErr(f); });
+});
+$('#yubikey').addEventListener('input', e => {
+  let raw = e.target.value; const m = raw.match(/me(\d{6})@meti\.ai/i);
+  const d = (m ? m[1] : raw.replace(/\D/g, '')).slice(0, 6); e.target.value = d;
+  $('#ykHint').textContent = d.length && d.length < 6 ? `${d.length} / 6` : (d.length === 6 ? `me${d}@meti.ai` : '');
+  $('#ykHint').className = 'hint' + (d.length === 6 ? ' ok' : '');
+  setVal('yubikey', d.length === 6 ? `me${d}@meti.ai` : '');
+});
+$('#yubikey').addEventListener('blur', () => { touched.yubikey = true; showErr('yubikey'); });
+
+const link = $('#taskLink');
+link.addEventListener('input', () => onLink(link.value));
+link.addEventListener('blur', () => onLink(link.value, true));
+link.addEventListener('paste', () => setTimeout(() => onLink(link.value, true), 0));
+link.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); link.blur(); } });
+$('#pasteBtn').addEventListener('click', async () => {
+  try { const t = await navigator.clipboard.readText(); link.value = t; onLink(t, true); }
+  catch { link.focus(); toast('Press Ctrl+V (or long-press) to paste', true); }
+});
+
+const objects = $('#objects');
+objects.addEventListener('input', () => { objects.value = objects.value.replace(/\D/g, '').slice(0, 5); setVal('objects', objects.value); });
+objects.addEventListener('blur', () => { touched.objects = true; showErr('objects'); });
+$('#objMinus').addEventListener('click', () => { const n = Math.max(0, (parseInt(objects.value || '0', 10) || 0) - 1); objects.value = n; touched.objects = true; setVal('objects', String(n)); });
+$('#objPlus').addEventListener('click', () => { const n = (parseInt(objects.value || '0', 10) || 0) + 1; objects.value = n; touched.objects = true; setVal('objects', String(n)); });
+
+/* ───── init ───── */
+async function init(){
+  if (DEMO){
+    const c = store.get('meti-backup-config', null); if (c) CONFIG = c;
+  }
+  normalizeCfg(); loadSaved();
+  ['pcNo','labelerName'].forEach(f => $('#' + f).value = S[f]);
+  const ym = S.yubikey.match(/^me(\d{6})@/i); if (ym) $('#yubikey').value = ym[1];
+  FIELDS.forEach(f => { if (auto[f] !== undefined) setAuto(f, false); });
+  renderShift(); renderUnits(); renderQtcShift(); renderQtc(); renderPass(); renderModality(); renderQueues();
+  renderOdo(); renderRecent(); progress();
+  if (IDENTITY.filter(f => f !== 'nationalId').every(f => !validators[f](S[f]))) collapseWho(false); else collapseWho(false);
+  if (!DEMO){
+    try {
+      const r = await fetch(APPS_SCRIPT_URL + '?action=getConfig'); const d = await r.json();
+      if (d.success && d.config){
+        const c = d.config;
+        CONFIG = { shifts: c.shifts?.length ? c.shifts : DEFAULT_CONFIG.shifts, units: c.units?.length ? c.units : DEFAULT_CONFIG.units,
+                   queues: c.queues?.length ? c.queues : DEFAULT_CONFIG.queues, personnel: c.personnel || DEFAULT_CONFIG.personnel };
+        normalizeCfg(); renderUnits(); renderQueues(); renderQtc();
+        const n = ['M','N','ON'].reduce((t,k) => t + CONFIG.personnel[k].qtc.length, 0);
+        $('#qtcSync').textContent = n + ' QTC names loaded from the sheet'; $('#qtcSync').className = 'hint ok';
+      }
+    } catch { $('#qtcSync').textContent = 'Could not reach the sheet — check APPS_SCRIPT_URL / deployment access'; }
+  }
+}
+init();
+</script>
+</body>
+</html>
