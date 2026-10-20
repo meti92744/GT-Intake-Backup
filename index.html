@@ -1028,6 +1028,17 @@ renderOutbox(); setTimeout(outboxFlush, 800);
   check(); setInterval(check, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
 })();
+$('#submitBtn').addEventListener('click', submit);
+
+/* ───── edit mode (PIN + lists) ───── */
+const pinDlg = $('#pinDlg');
+$('#editToggle').addEventListener('click', () => {
+  if (editMode) return exitEdit();
+  $('#pinInput').value = ''; $('#pinErr').textContent = ''; pinDlg.showModal(); setTimeout(() => $('#pinInput').focus(), 40);
+});
+$('#pinCancel').addEventListener('click', () => pinDlg.close());
+$('#pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
+$('#pinOk').addEventListener('click', submitPin);
 async function submitPin(){
   const pin = $('#pinInput').value; if (!pin) return;
   const btn = $('#pinOk'); btn.disabled = true; btn.textContent = 'Checking…';
