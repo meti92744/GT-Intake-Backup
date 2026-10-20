@@ -921,43 +921,113 @@ async function submit(){
   }
   if (doneIds[S.taskId]){ showDup(S.taskId, new Date(doneIds[S.taskId]).toLocaleString()); return; }
 
-  busy = true; const btn = $('#submitBtn'); btn.setAttribute('aria-busy','true'); $('#submitLabel').textContent = 'Submitting…';
+  /* Optimistic submit: the task is accepted instantly and sent to the sheet in the background (outbox below),
+     so the user never waits for Apps Script. If the network is down the outbox keeps it and retries by itself. */
   const payload = { action:'submitTask', timestamp:new Date().toISOString(), ...S };  // S.stage = Lidar/Sellmapping/Relabeling Stage, S.pass = FP/QA
+  const now = new Date();
+  session.count++;
+  session.log.unshift({ t:now.toTimeString().slice(0,5), id:S.taskId, pass:S.pass, obj:S.objects });
+  doneIds[S.taskId] = now.toISOString();
+  const sentId = S.taskId;
+  outboxAdd(payload);
+  saveSession(); renderOdo(); renderRecent();
+  toast(`Task ${sentId} submitted`);
+  resetTask(); collapseWho(true); progress();
+  $('#qtcBlock').scrollIntoView({ block:'start' }); $('#taskLink').focus({ preventScroll:true });
+}
+
+/* ───── outbox: background sending with retry (survives network drops and closing the page) ───── */
+const OUTBOX_KEY = 'meti-backup-outbox';
+let outbox = store.get(OUTBOX_KEY, []);
+const inflight = new Set();
+function outboxSave(){ store.set(OUTBOX_KEY, outbox); renderOutbox(); }
+function outboxAdd(payload){
+  outbox.push({ oid: payload.taskId + '|' + payload.timestamp, payload, attempts: 0, next: 0 });
+  outboxSave(); outboxFlush();
+}
+function outboxDrop(oid){ outbox = outbox.filter(x => x.oid !== oid); outboxSave(); }
+async function outboxSend(it){
+  if (inflight.has(it.oid)) return;
+  inflight.add(it.oid);
   try {
     let res;
-    if (DEMO){ await sleep(700); res = { success:true }; }
+    if (DEMO){ await sleep(1200); res = { success:true }; }
     else {
-      const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(payload) });
-      res = await r.json();
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
+      try {
+        const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(it.payload), signal:ctl.signal });
+        res = await r.json();
+      } finally { clearTimeout(t); }
     }
-    if (res.duplicate){ showDup(S.taskId, [res.date, res.time].filter(Boolean).join(' ')); }
-    else if (res.success){
-      const now = new Date();
-      session.count++;
-      session.log.unshift({ t:now.toTimeString().slice(0,5), id:S.taskId, pass:S.pass, obj:S.objects });
-      doneIds[S.taskId] = now.toISOString();
-      saveSession(); renderOdo(); renderRecent();
-      toast(`Task ${S.taskId} submitted`);
-      resetTask(); collapseWho(true); progress();
-      $('#qtcBlock').scrollIntoView({ block:'start' }); $('#taskLink').focus({ preventScroll:true });
-    } else toast(res.message || 'Submit failed — try again', true);
+    if (res.success){ outboxDrop(it.oid); }
+    else if (res.duplicate){
+      outboxDrop(it.oid);
+      // a retry of something that already reached the sheet is fine; a genuine duplicate is reported
+      if (it.attempts === 0){
+        const i = session.log.findIndex(x => x.id === it.payload.taskId);
+        if (i !== -1){ session.log.splice(i, 1); session.count = Math.max(0, session.count - 1); renderOdo(); renderRecent(); }
+        toast(`Task ${it.payload.taskId} was already in the sheet — not added twice`, true);
+      }
+    } else {
+      outboxDrop(it.oid);   // the server answered and refused it → retrying won't help, tell the user
+      toast(`Task ${it.payload.taskId} NOT saved: ${res.message || 'rejected by the sheet'} — submit it again`, true);
+    }
   } catch (e){
-    toast('No connection. Check the network and try again.', true);
+    it.attempts++; it.next = Date.now() + Math.min(30000, 2000 * it.attempts);   // network / timeout → keep it and retry
+    outboxSave();
   } finally {
-    busy = false; btn.removeAttribute('aria-busy'); $('#submitLabel').textContent = 'Submit task';
+    inflight.delete(it.oid);
+    if (outbox.length) setTimeout(outboxFlush, 600);
   }
 }
-$('#submitBtn').addEventListener('click', submit);
+function outboxFlush(){
+  const now = Date.now();
+  outbox.filter(x => x.next <= now && !inflight.has(x.oid)).forEach(outboxSend);
+}
+function renderOutbox(){
+  let el = $('#outboxBadge');
+  if (!outbox.length){ if (el) el.remove(); return; }
+  if (!el){
+    el = h('button', { id:'outboxBadge', type:'button', onclick: () => { outbox.forEach(x => x.next = 0); outboxFlush(); } });
+    el.style.cssText = 'position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:50;padding:7px 12px;border-radius:999px;border:0;font:600 12px system-ui,sans-serif;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)';
+    document.body.appendChild(el);
+  }
+  const failing = outbox.some(x => x.attempts > 0);
+  el.style.background = failing ? '#c62828' : '#1565d8';
+  el.textContent = failing ? `⚠ ${outbox.length} not sent yet — retrying (tap to retry now)` : `⏳ Sending ${outbox.length}…`;
+}
+window.addEventListener('online', () => { outbox.forEach(x => x.next = 0); outboxFlush(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) outboxFlush(); });
+setInterval(outboxFlush, 5000);
+window.addEventListener('beforeunload', e => { if (outbox.length){ e.preventDefault(); e.returnValue = ''; } });
+renderOutbox(); setTimeout(outboxFlush, 800);
 
-/* ───── edit mode (PIN + lists) ───── */
-const pinDlg = $('#pinDlg');
-$('#editToggle').addEventListener('click', () => {
-  if (editMode) return exitEdit();
-  $('#pinInput').value = ''; $('#pinErr').textContent = ''; pinDlg.showModal(); setTimeout(() => $('#pinInput').focus(), 40);
-});
-$('#pinCancel').addEventListener('click', () => pinDlg.close());
-$('#pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
-$('#pinOk').addEventListener('click', submitPin);
+/* ───── auto-update: people who already have the form open get the new version without refreshing ───── */
+(function(){
+  if (location.protocol === 'file:') return;
+  const hashOf = t => { let x = 0; for (let i = 0; i < t.length; i++){ x = (x << 5) - x + t.charCodeAt(i); x |= 0; } return x; };
+  let base = null, shown = false;
+  const idle = () => !busy && !outbox.length && !S.taskLink && !S.taskId && !S.objects && !(document.activeElement && document.activeElement.tagName === 'INPUT');
+  async function check(){
+    try {
+      const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache:'no-store' });
+      if (!r.ok) return;
+      const h2 = hashOf(await r.text());
+      if (base === null){ base = h2; return; }
+      if (h2 === base) return;
+      if (idle()){ location.reload(); return; }
+      if (!shown){
+        shown = true;
+        const b = h('button', { type:'button', onclick: () => { if (outbox.length) return toast('Wait for the pending tasks to finish sending first', true); location.reload(); } });
+        b.textContent = '🔄 New version available — tap to update';
+        b.style.cssText = 'position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:60;padding:9px 16px;border-radius:999px;border:0;background:#2e7d32;color:#fff;font:600 13px system-ui,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3)';
+        document.body.appendChild(b);
+      }
+    } catch (e) {}
+  }
+  check(); setInterval(check, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+})();
 async function submitPin(){
   const pin = $('#pinInput').value; if (!pin) return;
   const btn = $('#pinOk'); btn.disabled = true; btn.textContent = 'Checking…';
