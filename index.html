@@ -625,6 +625,12 @@ function normPc(raw){
   const w = PC_WORDS.find(x => x.toLowerCase() === v.replace(/[^a-z]/gi, '').toLowerCase());
   return w || v.replace(/[^a-z]/gi, '').slice(0, 6);
 }
+/* Labeler name: collapse extra spaces + Capitalize Each Word (keeps one trailing space while typing so the user can type the next word) */
+function normName(raw, final){
+  let v = String(raw || '').replace(/\s+/g, ' ');
+  if (final) v = v.trim(); else v = v.replace(/^\s+/, '');
+  return v.toLowerCase().replace(/(^|[\s\-])([a-z])/g, (m, p, c) => p + c.toUpperCase());
+}
 const validators = {
   shift: v => v ? '' : 'اختار الشيفت',
   unit: v => v ? '' : 'اختار الـ Unit',
@@ -649,7 +655,7 @@ const validators = {
 /* ───── persistence ───── */
 function loadSaved(){
   const saved = store.get('meti-backup-identity', {});
-  SAVED.forEach(f => { if (typeof saved[f] === 'string') S[f] = f === 'pcNo' ? normPc(saved[f]) : saved[f]; });
+  SAVED.forEach(f => { if (typeof saved[f] === 'string') S[f] = f === 'pcNo' ? normPc(saved[f]) : f === 'labelerName' ? normName(saved[f], true) : saved[f]; });
 }
 function persistIdentity(){
   const o = {}; SAVED.forEach(f => o[f] = S[f]); store.set('meti-backup-identity', o);
@@ -904,6 +910,7 @@ function resetTask(){
 
 async function submit(){
   if (busy) return;
+  S.labelerName = normName(S.labelerName, true); $('#labelerName').value = S.labelerName;
   attempted = true; FIELDS.forEach(showErr);
   const firstBad = FIELDS.find(f => validators[f](S[f]));
   if (firstBad){
@@ -1055,11 +1062,19 @@ $$('[data-bind]').forEach(inp => {
   inp.addEventListener('input', () => {
     let v = inp.value;
     if (f === 'pcNo'){ v = normPc(v); inp.value = v; }
+    if (f === 'labelerName'){
+      const nv = normName(v, false);
+      if (nv !== v){ const pos = inp.selectionStart, d = nv.length - v.length; inp.value = nv; try{ inp.setSelectionRange(Math.max(0,pos+d), Math.max(0,pos+d)); }catch(e){} }
+      v = nv;
+    }
     if (f === 'nationalId' || f === 'taskId'){ v = v.replace(/\D/g, ''); inp.value = v; }
     if (f === 'nationalId') $('#nidHint').textContent = v.length && v.length < 14 ? `${v.length} / 14` : '';
     setVal(f, v, true);
   });
-  inp.addEventListener('blur', () => { touched[f] = true; showErr(f); });
+  inp.addEventListener('blur', () => {
+    if (f === 'labelerName'){ const nv = normName(inp.value, true); inp.value = nv; setVal(f, nv, true); }
+    touched[f] = true; showErr(f);
+  });
 });
 $('#yubikey').addEventListener('input', e => {
   let raw = e.target.value; const m = raw.match(/me(\d{6})@meti\.ai/i);
