@@ -529,7 +529,7 @@ body.editing .role-cycle{display:inline-block}
    ════════════════════════════════════════════════════════════ */
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVRdGUkdMy90d4I9o1Dun2aeMU-Np75FCA23TZrvXvJu7qMfEbcz-pynyTa86e-KQ/exec";
 const DEMO = !APPS_SCRIPT_URL;
-const DEMO_PIN = "Intake2026";
+const DEMO_PIN = "demo";
 
 const DEFAULT_CONFIG = {
   shifts: ["Morning","Night","Over Night","Morning 12 H","Over Night 12 H","Over Shift (M)","Over Shift (N)","Over Shift (ON)"],
@@ -545,13 +545,8 @@ const DEFAULT_CONFIG = {
     "r2s_sc3_3d_labeling",
     "alpine_sc3_full_scene_3d_lanes_parallel_labeling"
   ],
-  /* Same layout as the sheet tabs "Morning QTC" / "Night QTC" / "Over Night QTC": columns Name, Role.
-     Preview only — the live form reads these tabs from the Backup sheet. */
-  personnel: {
-    M:  { qtc: [] },
-    N:  { qtc: [] },
-    ON: { qtc: [{"name": "Omar Sharawy (ON)", "role": "QT"}, {"name": "Mohamed Ibrahim (ON)", "role": "QT"}, {"name": "Hesham Nasser (ON)", "role": "QT"}, {"name": "Mohamed Emam (ON)", "role": "QT"}, {"name": "Seif Waled (ON)", "role": "QT"}, {"name": "El Noby (ON)", "role": ""}, {"name": "Bahi Hussien (ON)", "role": ""}, {"name": "Abd El Rahman Ibrahiem (ON)", "role": ""}, {"name": "Ahmed Nagia (ON)", "role": ""}, {"name": "Abdalla Barbary (ON)", "role": ""}, {"name": "Mohamed Zakaria (ON)", "role": ""}, {"name": "Samer Neseim (ON)", "role": ""}, {"name": "Eyad Mohamed (ON)", "role": ""}, {"name": "Mahmoud Khaled Hussien (ON)", "role": ""}, {"name": "Mohamed Nasr (ON)", "role": ""}, {"name": "Shreif Hossam (ON)", "role": ""}, {"name": "Mohamed Sobhy (ON)", "role": ""}, {"name": "Youssef Reda (ON)", "role": ""}, {"name": "Mohamed Mostafa Mohamed (ON)", "role": ""}, {"name": "Yousef Fathy (ON)", "role": ""}, {"name": "Yousef Saad (ON)", "role": ""}, {"name": "Ahmed Samir Mohamed (ON)", "role": ""}, {"name": "Mostafa Mahmoud Mohamed (ON)", "role": ""}, {"name": "Mahmoud Ahmed Salama (ON)", "role": ""}, {"name": "Medhat Mohamed Fathy (ON)", "role": ""}, {"name": "Karim Mohamed (ON)", "role": ""}, {"name": "Amr Wael Sayed (ON)", "role": ""}, {"name": "Mohamed Hafez (ON)", "role": ""}, {"name": "Mohamed Fathy (ON)", "role": ""}, {"name": "Mostafa Fayez (ON)", "role": ""}] }
-  }
+  /* QTC names are read from the sheet tabs (Morning / Night / Over Night QTC) — nothing is hardcoded here. */
+  personnel: { M:{ qtc:[] }, N:{ qtc:[] }, ON:{ qtc:[] } }
 };
 
 /* Task link rules (same as Spot Check) */
@@ -569,7 +564,6 @@ const TASK_TYPE_RULES = [
   { match:/^sellrelabeling$/i,        pass:'FP', modality:null,        stage:'Relabeling Stage' }
 ];
 const ROLES = ['QT','SV','SSV'];
-const QTC_FOR_SHIFT = s => /\(ON\)|over night/i.test(s) ? 'ON' : /\(N\)|^night/i.test(s) ? 'N' : 'M';
 
 /* ───── helpers ───── */
 const $ = s => document.querySelector(s);
@@ -612,7 +606,7 @@ const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtc
 const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];
 const SAVED = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];   // filled once, remembered on this device
 const S = Object.fromEntries(FIELDS.map(f => [f, '']));
-const auto = { taskId:false, pass:false, stage:false, modality:false, queueName:false, qtcShift:false };
+const auto = { taskId:false, pass:false, stage:false, modality:false, queueName:false };
 const touched = {};
 let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); 
 let linkQueue = '';            // queue found in the link but missing from the list
@@ -706,7 +700,7 @@ function afterPick(field){
     renderShift();
   }
   if (field === 'unit') renderUnits();
-  if (field === 'qtcShift'){ S.qtcName = ''; persistIdentity(); renderQtcShift(); renderQtc(); }
+  if (field === 'qtcShift'){ S.qtcName = ''; qtcQuery = ''; renderQtcShift(); renderQtc(); }
   if (field === 'pass'){ renderPass(); passHint(); }
   if (field === 'stage') renderStage();
   if (field === 'modality') renderModality();
@@ -736,42 +730,49 @@ function normPeople(list){
   return (list || []).map(x => typeof x === 'string' ? { name:x.trim(), role:'', local:false }
     : { name:String(x.name || '').trim(), role:String(x.role || '').trim(), local:!!x.local }).filter(x => x.name);
 }
-function normalizeCfg(){ ['M','N','ON'].forEach(k => { const p = (CONFIG.personnel[k] ||= { qtc:[] }); p.qtc = normPeople(p.qtc); }); }
+function normalizeCfg(c = CONFIG){ c.personnel ||= {}; ['M','N','ON'].forEach(k => { const p = (c.personnel[k] ||= { qtc:[] }); p.qtc = normPeople(p.qtc); }); }
 function renderQtc(){
   const box = $('#qtcBox'); box.replaceChildren();
   if (!S.qtcShift){ box.append(h('div', { class:'combo-empty', dir:'auto', text:'اختار شيفت الـ QTC الأول عشان تظهر الأسماء.' })); return; }
-  const people = CONFIG.personnel[S.qtcShift]?.qtc || [];
+  const ctx = S.qtcShift;
+  const people = CONFIG.personnel[ctx]?.qtc || [];
   const search = h('input', { class:'inp qtc-search', placeholder:'Search name…', value:qtcQuery, 'aria-label':'Search QTC name', autocomplete:'off',
-    oninput: e => { qtcQuery = e.target.value; fillList(); } });
+    oninput: e => { qtcQuery = e.target.value; applyFilter(); } });
   const grid = h('div', { class:'qtc-grid', role:'listbox', 'aria-label':'QTC names' });
   const tag = h('div', { class:'qtc-tag-row' });
+  const empty = h('div', { class:'combo-empty hidden', dir:'auto', text:'مفيش اسم بالشكل ده.' });
   box.append(search);
-  if (editMode) box.append(h('div', { style:'margin-top:10px' }, addBtn('Add name', () => openAdd({ mode:'add', type:'qtc', ctx:S.qtcShift }))));
+  if (editMode) box.append(h('div', { style:'margin-top:10px' }, addBtn('Add name', () => openAdd({ mode:'add', type:'qtc', ctx }))));
   box.append(grid, tag);
   const badge = r => r ? h('span', { class:'role r-' + r.toLowerCase().replace(/[^a-z]/g, ''), text:r }) : null;
-  void badge;
+  const cards = people.map(p => {
+    const check = h('span', { class:'qtc-check' });
+    const pick = h('button', { type:'button', class:'qtc-pick', role:'option', 'aria-selected':'false',
+      onclick:() => { touched.qtcName = true; setVal('qtcName', S.qtcName === p.name ? '' : p.name); paintSel(); } },
+      check, h('span', { class:'qtc-txt' }, h('span', { class:'qtc-name', text:p.name }), p.role ? h('span', { class:'qtc-role', text:p.role }) : null));
+    const card = h('div', { class:'qtc-card' }, pick,
+      h('button', { type:'button', class:'role-cycle', title:'Change label', text:p.role || '+ label', onclick:() => cycleRole(ctx, p.name) }),
+      iconBtn('pencil', 'Edit', () => openAdd({ mode:'rename', type:'qtc', ctx, old:p.name, role:p.role })),
+      iconBtn('x', 'Delete (tap twice)', function(){ armed(this, () => deleteItem('qtc', ctx, p.name)); }));
+    return { p, card, pick, check };
+  });
+  grid.append(empty, ...cards.map(c => c.card));
   function renderTag(){
     tag.replaceChildren(); if (!S.qtcName) return;
     const p = people.find(x => x.name === S.qtcName);
     tag.append(h('div', { class:'qtc-tag' }, S.qtcName, p && badge(p.role),
-      h('button', { type:'button', 'aria-label':'Clear', text:'✕', onclick:() => { touched.qtcName = true; setVal('qtcName', ''); fillList(); renderTag(); } })));
+      h('button', { type:'button', 'aria-label':'Clear', text:'✕', onclick:() => { touched.qtcName = true; setVal('qtcName', ''); paintSel(); } })));
   }
-  function fillList(){
-    grid.replaceChildren();
-    const q = qtcQuery.trim().toLowerCase();
-    const hits = people.filter(p => p.name.toLowerCase().includes(q));
-    if (!hits.length) grid.append(h('div', { class:'combo-empty', dir:'auto', text:'مفيش اسم بالشكل ده.' }));
-    hits.forEach(p => {
-      const sel = S.qtcName === p.name;
-      grid.append(h('div', { class:'qtc-card' + (sel ? ' selected' : '') },
-        h('button', { type:'button', class:'qtc-pick', role:'option', 'aria-selected':String(sel), onclick:() => { touched.qtcName = true; setVal('qtcName', sel ? '' : p.name); fillList(); renderTag(); } },
-          h('span', { class:'qtc-check', text: sel ? '✓' : '' }), h('span', { class:'qtc-txt' }, h('span', { class:'qtc-name', text:p.name }), p.role ? h('span', { class:'qtc-role', text:p.role }) : null)),
-        h('button', { type:'button', class:'role-cycle', title:'Change label', text:p.role || '+ label', onclick:() => cycleRole(S.qtcShift, p.name) }),
-        iconBtn('pencil', 'Edit', () => openAdd({ mode:'rename', type:'qtc', ctx:S.qtcShift, old:p.name, role:p.role })),
-        iconBtn('x', 'Delete (tap twice)', function(){ armed(this, () => deleteItem('qtc', S.qtcShift, p.name)); })));
-    });
+  function applyFilter(){
+    const q = qtcQuery.trim().toLowerCase(); let n = 0;
+    cards.forEach(c => { const show = !q || c.p.name.toLowerCase().includes(q); c.card.classList.toggle('hidden', !show); if (show) n++; });
+    empty.classList.toggle('hidden', n > 0);
   }
-  fillList(); renderTag();
+  function paintSel(){
+    cards.forEach(c => { const sel = S.qtcName === c.p.name; c.card.classList.toggle('selected', sel); c.pick.setAttribute('aria-selected', String(sel)); c.check.textContent = sel ? '\u2713' : ''; });
+    renderTag();
+  }
+  applyFilter(); paintSel();
 }
 function cycleRole(ctx, name){
   const list = CONFIG.personnel[ctx].qtc; const it = list.find(x => x.name === name); if (!it) return;
@@ -783,7 +784,6 @@ function addBtn(label, onclick){
 }
 
 /* ───── identity summary / collapse ───── */
-function identityValid(){ return IDENTITY.every(f => !validators[f](S[f])); }
 function renderSummary(){
   const box = $('#whoSummary'); box.replaceChildren();
   [['', S.shift], ['', S.unit], ['PC', S.pcNo], ['', S.labelerName], ['Yubikey', S.yubikey]].forEach(([k, v]) => {
@@ -812,18 +812,22 @@ function progress(){
 function cleanLink(v){
   v = v.trim(); const i = v.search(/\/frame(\/|$)/i); return i !== -1 ? v.slice(0, i) : v;
 }
+let lastLink = '';
 function onLink(raw, fromBlur = false){
   const input = $('#taskLink');
   const v = cleanLink(raw);
   if (fromBlur || v !== raw) input.value = v;
+  if (v === lastLink){ if (fromBlur && v){ touched.taskLink = true; showErr('taskLink'); } return; }
+  lastLink = v;
   S.taskLink = v;
   const hint = $('#linkHint');
   hint.className = 'hint';
+  const had = ['taskId','pass','stage','modality','queueName'].some(f => auto[f]);
   ['taskId','pass','stage','modality','queueName'].forEach(f => { if (auto[f]) { S[f] = ''; setAuto(f, false); } });
   linkQueue = ''; input._passFromLink = '';
-  if (!v){ hint.textContent = ''; syncAutoUI(); showErr('taskLink'); progress(); return; }
+  if (!v){ hint.textContent = ''; if (had) syncAutoUI(); showErr('taskLink'); progress(); return; }
   const bad = validators.taskLink(v);
-  if (bad){ hint.textContent = ''; if (fromBlur) touched.taskLink = true; showErr('taskLink'); syncAutoUI(); progress(); return; }
+  if (bad){ hint.textContent = ''; if (fromBlur) touched.taskLink = true; showErr('taskLink'); if (had) syncAutoUI(); progress(); return; }
 
   const id = (v.match(/\/id\/(\d+)/i) || [])[1] || '';
   if (id){ S.taskId = id; setAuto('taskId', true); $('#taskId').value = id; }
@@ -901,7 +905,7 @@ function resetTask(){
   ['taskLink','taskId','pass','stage','modality','queueName','objects','qtcShift','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
   qtcQuery = '';
   ['taskId','pass','stage','modality','queueName'].forEach(f => setAuto(f, false));
-  linkQueue = ''; $('#taskLink')._passFromLink = '';
+  linkQueue = ''; $('#taskLink')._passFromLink = ''; lastLink = '';
   $('#taskLink').value = ''; $('#taskId').value = ''; $('#objects').value = ''; $('#linkHint').textContent = '';
   attempted = false;
   FIELDS.forEach(showErr);
@@ -920,6 +924,7 @@ async function submit(){
     toast('Complete the highlighted field first', true); return;
   }
   if (doneIds[S.taskId]){ showDup(S.taskId, new Date(doneIds[S.taskId]).toLocaleString()); return; }
+  busy = true; setTimeout(() => { busy = false; }, 700);
 
   /* Optimistic submit: the task is accepted instantly and sent to the sheet in the background (outbox below),
      so the user never waits for Apps Script. If the network is down the outbox keeps it and retries by itself. */
@@ -953,7 +958,7 @@ async function outboxSend(it){
     let res;
     if (DEMO){ await sleep(1200); res = { success:true }; }
     else {
-      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 20000);
       try {
         const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(it.payload), signal:ctl.signal });
         res = await r.json();
@@ -977,12 +982,13 @@ async function outboxSend(it){
     outboxSave();
   } finally {
     inflight.delete(it.oid);
-    if (outbox.length) setTimeout(outboxFlush, 600);
+    if (outbox.length) setTimeout(outboxFlush, 250);
   }
 }
 function outboxFlush(){
-  const now = Date.now();
-  outbox.filter(x => x.next <= now && !inflight.has(x.oid)).forEach(outboxSend);
+  if (inflight.size) return;
+  const now = Date.now(), it = outbox.find(x => x.next <= now);
+  if (it) outboxSend(it);
 }
 function renderOutbox(){
   let el = $('#outboxBadge');
@@ -1007,7 +1013,7 @@ renderOutbox(); setTimeout(outboxFlush, 800);
   if (location.protocol === 'file:') return;
   const hashOf = t => { let x = 0; for (let i = 0; i < t.length; i++){ x = (x << 5) - x + t.charCodeAt(i); x |= 0; } return x; };
   let base = null, shown = false;
-  const idle = () => !busy && !outbox.length && !S.taskLink && !S.taskId && !S.objects && !(document.activeElement && document.activeElement.tagName === 'INPUT');
+  const idle = () => !busy && !outbox.length && !session.count && !S.taskLink && !S.taskId && !S.objects && !(document.activeElement && document.activeElement.tagName === 'INPUT');
   async function check(){
     try {
       const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache:'no-store' });
@@ -1070,8 +1076,8 @@ function saveStatus(msg, bad = false){
   const el = $('#saveStatus'); el.textContent = msg; el.style.color = bad ? 'var(--bad)' : '';
   clearTimeout(saveStatus._t); if (msg && !msg.endsWith('…')) saveStatus._t = setTimeout(() => el.textContent = '', 3000);
 }
-async function saveConfig(){
-  saveStatus('Saving…');
+function saveConfig(){ saveStatus('Saving…'); clearTimeout(saveTimer); saveTimer = setTimeout(doSaveConfig, 450); }
+async function doSaveConfig(){
   if (DEMO){ store.set('meti-backup-config', CONFIG); saveStatus('Saved on this device (preview)'); return; }
   try {
     const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify({ action:'saveConfig', pin:sessionPin, config:CONFIG }) });
@@ -1183,28 +1189,34 @@ $('#objMinus').addEventListener('click', () => { const n = Math.max(0, (parseInt
 $('#objPlus').addEventListener('click', () => { const n = (parseInt(objects.value || '0', 10) || 0) + 1; objects.value = n; touched.objects = true; setVal('objects', String(n)); });
 
 /* ───── init ───── */
+const CFG_CACHE = 'meti-backup-config-cache';
+function mergeCfg(c){
+  const d = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  return { shifts: c.shifts?.length ? c.shifts : d.shifts, units: c.units?.length ? c.units : d.units,
+           queues: c.queues?.length ? c.queues : d.queues, personnel: c.personnel || d.personnel };
+}
+async function syncConfig(){
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const r = await fetch(APPS_SCRIPT_URL + '?action=getConfig', { signal:ctl.signal }); const d = await r.json();
+    if (d.success && d.config){
+      store.set(CFG_CACHE, d.config);
+      const next = mergeCfg(d.config); normalizeCfg(next);
+      if (JSON.stringify(next) !== JSON.stringify(CONFIG)){ CONFIG = next; renderShift(); renderUnits(); renderQueues(); renderQtc(); }
+    }
+  } catch { if (!store.get(CFG_CACHE, null)) $('#qtcSync').textContent = 'Could not reach the sheet — check APPS_SCRIPT_URL / deployment access'; }
+  finally { clearTimeout(t); }
+}
 async function init(){
-  if (DEMO){
-    const c = store.get('meti-backup-config', null); if (c) CONFIG = c;
-  }
+  if (DEMO){ const c = store.get('meti-backup-config', null); if (c) CONFIG = c; }
+  else { const c = store.get(CFG_CACHE, null); if (c) CONFIG = mergeCfg(c); }
   normalizeCfg(); loadSaved();
   ['pcNo','labelerName','nationalId'].forEach(f => $('#' + f).value = S[f]);
   const ym = S.yubikey.match(/^me(\d{6})@/i); if (ym) $('#yubikey').value = ym[1];
   FIELDS.forEach(f => { if (auto[f] !== undefined) setAuto(f, false); });
   renderShift(); renderUnits(); renderQtcShift(); renderQtc(); renderPass(); renderStage(); renderModality(); renderQueues();
-  renderOdo(); renderRecent(); progress();
-  if (IDENTITY.filter(f => f !== 'nationalId').every(f => !validators[f](S[f]))) collapseWho(false); else collapseWho(false);
-  if (!DEMO){
-    try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=getConfig'); const d = await r.json();
-      if (d.success && d.config){
-        const c = d.config;
-        CONFIG = { shifts: c.shifts?.length ? c.shifts : DEFAULT_CONFIG.shifts, units: c.units?.length ? c.units : DEFAULT_CONFIG.units,
-                   queues: c.queues?.length ? c.queues : DEFAULT_CONFIG.queues, personnel: c.personnel || DEFAULT_CONFIG.personnel };
-        normalizeCfg(); renderUnits(); renderQueues(); renderQtc();
-      }
-    } catch { $('#qtcSync').textContent = 'Could not reach the sheet — check APPS_SCRIPT_URL / deployment access'; }
-  }
+  renderOdo(); renderRecent(); progress(); collapseWho(false);
+  if (!DEMO) await syncConfig();
 }
 init();
 </script>
