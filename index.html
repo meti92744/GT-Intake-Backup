@@ -60,9 +60,6 @@ button{cursor:pointer}
 .recent .rid{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .recent .rmeta{color:var(--cyan);font-weight:600;font-size:13px;white-space:nowrap}
 .recent .empty{border:0;color:var(--on-rail-muted);display:block;padding:0;font-size:14px}
-.edit-toggle{margin-top:auto;display:flex;align-items:center;gap:10px;background:transparent;border:1px solid rgba(255,255,255,.22);color:var(--on-rail);padding:11px 14px;border-radius:8px;font-weight:500}
-.edit-toggle:hover{background:rgba(255,255,255,.07)}
-body.editing .edit-toggle{background:var(--warn-bg);color:var(--warn);border-color:transparent}
 .ico{width:18px;height:18px;flex:none}
 
 /* ───────── Sheet ───────── */
@@ -71,10 +68,6 @@ body.editing .edit-toggle{background:var(--warn-bg);color:var(--warn);border-col
 .sheet-head p{margin:0;color:var(--muted);max-width:52ch}
 .preview-note{display:inline-block;margin-top:14px;font-size:13px;color:var(--warn);background:var(--warn-bg);padding:5px 10px;border-radius:6px}
 
-.edit-banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:var(--warn-bg);color:var(--warn);padding:12px 16px;border-radius:8px;margin:26px 0 0;font-weight:500}
-.edit-banner .grow{flex:1}
-.edit-banner button{background:none;border:1px solid currentColor;color:inherit;border-radius:6px;padding:5px 12px}
-#saveStatus{font-weight:400;font-size:14px}
 
 .block{margin-top:44px;padding-top:26px;border-top:2px solid var(--text)}
 .block-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
@@ -122,12 +115,6 @@ body.editing .edit-toggle{background:var(--warn-bg);color:var(--warn);border-col
 .seg .chip[aria-checked="true"]::before{display:none}
 .field.bad .choices,.field.bad .seg{outline:2px solid var(--bad);outline-offset:3px;border-radius:8px}
 
-.mini-btn{flex:none;width:30px;height:30px;display:none;place-items:center;border:1px solid var(--line);background:var(--sheet);border-radius:6px;color:var(--muted)}
-.mini-btn:hover{color:var(--text);border-color:var(--text)}
-.mini-btn[data-armed]{background:var(--bad);color:#fff;border-color:var(--bad)}
-body.editing .mini-btn{display:grid}
-.add-btn{display:none;align-items:center;gap:8px;border:1.5px dashed var(--blue);background:transparent;color:var(--blue);border-radius:6px;padding:10px 14px;font-weight:600}
-body.editing .add-btn{display:inline-flex}
 
 .combo-selected{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--rail);color:#fff;border-radius:8px;padding:12px 16px;font-weight:600}
 .combo-selected button{background:none;border:0;color:var(--cyan);font-weight:600;text-decoration:underline;text-underline-offset:3px}
@@ -154,6 +141,11 @@ body.editing .add-btn{display:inline-flex}
 .queues{display:flex;flex-direction:column;gap:6px}
 .queues .choice .chip{font-size:14.5px;word-break:break-all;font-family:ui-monospace,"SF Mono",Consolas,monospace;padding:10px 14px}
 .queues .chip .from{font-family:var(--font-ui);font-size:12px;color:var(--cyan);margin-inline-start:8px}
+.queues .chip .hl{background:color-mix(in srgb,var(--warn) 30%,transparent);color:inherit;font-weight:800;border-radius:4px;padding:0 3px}
+.queues .chip[aria-checked="true"] .hl{background:rgba(255,255,255,.28)}
+.queues .chip .hl-tag{font-family:var(--font-ui);font-size:11.5px;font-weight:700;padding:1px 9px;border-radius:99px;margin-inline-start:8px;background:color-mix(in srgb,var(--warn) 30%,transparent);color:inherit;white-space:nowrap}
+.queues .chip[aria-checked="true"] .hl-tag{background:rgba(255,255,255,.28)}
+.queue-empty{color:var(--muted);font-size:14px;padding:10px 2px}
 .stepper{display:inline-flex;align-items:stretch;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sheet)}
 .field.bad .stepper{border-color:var(--bad)}
 .stepper:focus-within{border-color:var(--blue)}
@@ -203,7 +195,6 @@ dialog .inp{margin-bottom:6px}
   .tally-actions{justify-content:flex-end;margin-top:6px;gap:14px}
   .link-btn{font-size:13px}
   .recent{display:none}
-  .edit-toggle{margin:0;grid-column:1/-1;justify-content:center;padding:9px 12px;font-size:14px}
   .sheet{padding:30px 18px 170px}
   .dock{left:0;padding-inline:18px}
   .grid2,.stack{grid-template-columns:1fr}
@@ -248,7 +239,7 @@ body{background:radial-gradient(900px 420px at 85% -8%,color-mix(in srgb,var(--b
 .stepper{border-width:1.5px;border-radius:12px}
 .submit{border-radius:14px}
 .submit.ready{background:linear-gradient(135deg,var(--blue),var(--blue-deep));box-shadow:0 10px 22px -10px var(--blue)}
-.edit-banner,.dup-warn,.preview-note{border-radius:12px}
+.dup-warn,.preview-note{border-radius:12px}
 dialog{border-radius:20px}
 .btn{border-radius:12px}
 /* QTC cards */
@@ -268,7 +259,6 @@ dialog{border-radius:20px}
 .qtc-tag-row{margin-top:10px;display:flex;flex-wrap:wrap}
 .qtc-tag{display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--good) 12%,var(--sheet));border:1px solid color-mix(in srgb,var(--good) 40%,transparent);color:var(--good);border-radius:99px;padding:5px 8px 5px 14px;font-weight:600;font-size:14px}
 .qtc-tag button{background:none;border:0;color:inherit;opacity:.7;min-width:22px;min-height:22px}
-.role-pick{margin-top:6px}.role-pick .lbl-s{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
 @media (max-width:860px){
   .rail{margin:0;top:auto;height:auto;border-radius:0 0 22px 22px}
   .dock{left:0;border-radius:16px 16px 0 0}
@@ -278,8 +268,6 @@ dialog{border-radius:20px}
 
 .qtc-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .qtc-role{font-size:11.5px;font-weight:600;color:var(--blue);letter-spacing:.02em}
-.role-cycle{display:none;flex:none;border:1px dashed var(--blue);background:transparent;color:var(--blue);border-radius:99px;font-size:11px;font-weight:700;padding:3px 9px}
-body.editing .role-cycle{display:inline-block}
 .qtc-pick{padding:10px 10px}
 
 .hint.chk{font-size:22px;font-weight:800;line-height:1;margin-top:8px}
@@ -322,10 +310,6 @@ body.editing .role-cycle{display:inline-block}
       <ol id="recentList"></ol>
     </div>
 
-    <button type="button" class="edit-toggle" id="editToggle">
-      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="editIco"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      <span id="editLabel">Edit lists</span>
-    </button>
   </aside>
 
   <!-- ═════ Form sheet ═════ -->
@@ -334,11 +318,6 @@ body.editing .role-cycle{display:inline-block}
       <h1>GT-Intake Backup</h1>
       </header>
 
-    <div class="edit-banner hidden" id="editBanner">
-      <span>Editing lists</span>
-      <span id="saveStatus" class="grow"></span>
-      <button type="button" id="exitEdit">Done</button>
-    </div>
 
     <!-- Identity -->
     <section class="block collapsed" id="who" aria-labelledby="whoTitle">
@@ -357,7 +336,6 @@ body.editing .role-cycle{display:inline-block}
         <div class="field" data-f="unit">
           <div class="lbl" id="l-unit">Unit</div>
           <div class="choices" id="unitChoices" role="radiogroup" aria-labelledby="l-unit"></div>
-          <div style="margin-top:10px"><button type="button" class="add-btn" data-add="unit"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add unit</button></div>
           <div class="err" dir="auto"></div>
         </div>
 
@@ -461,7 +439,6 @@ body.editing .role-cycle{display:inline-block}
         <div class="field span2" data-f="queueName">
           <div class="lbl" id="l-queue">Queue <span class="auto-pill">auto</span></div>
           <div class="queues" id="queueChoices" role="radiogroup" aria-labelledby="l-queue"></div>
-          <div style="margin-top:10px"><button type="button" class="add-btn" data-add="queue"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add queue</button></div>
           <div class="err" dir="auto"></div>
         </div>
       </div>
@@ -483,31 +460,6 @@ body.editing .role-cycle{display:inline-block}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- PIN dialog -->
-<dialog id="pinDlg">
-  <h3>Edit lists</h3>
-  <p dir="auto">ادخل الـ Password عشان تعدل الأسماء والـ Queues والـ Units.</p>
-  <input class="inp" id="pinInput" type="password" autocomplete="current-password" placeholder="Password">
-  <div class="err" id="pinErr" style="display:block;min-height:20px" dir="auto"></div>
-  <div class="dlg-actions">
-    <button type="button" class="btn" id="pinCancel">Cancel</button>
-    <button type="button" class="btn primary" id="pinOk">Unlock</button>
-  </div>
-</dialog>
-
-<!-- Add / rename dialog -->
-<dialog id="addDlg">
-  <h3 id="addTitle">Add</h3>
-  <p dir="auto" id="addHint"></p>
-  <input class="inp" id="addInput" autocomplete="off">
-  <div class="role-pick hidden" id="rolePick"><span class="lbl-s">Label</span><div class="seg" id="roleSeg" role="radiogroup" aria-label="Label"></div></div>
-  <div class="err" id="addErr" style="display:block;min-height:20px" dir="auto"></div>
-  <div class="dlg-actions">
-    <button type="button" class="btn" id="addCancel">Cancel</button>
-    <button type="button" class="btn primary" id="addOk">Save</button>
-  </div>
-</dialog>
-
 <!-- Duplicate dialog -->
 <dialog id="dupDlg">
   <h3>Already submitted</h3>
@@ -522,29 +474,17 @@ body.editing .role-cycle{display:inline-block}
    SETUP — paste your Apps Script Web App URL here.
    Leave it empty to run in preview mode (nothing is sent).
    Same protocol as the Spot Check form:
-     GET  ?action=getConfig            → {success, config}
-     GET  ?action=verifyPin&pin=…      → {success}
-     POST {action:'saveConfig',pin,config}
+     GET  ?action=getConfig            → {success, config}   (config.queues = rows of the "Queue List" tab: [{name, highlight}])
      POST {action:'submitTask', …fields}  → {success, message, duplicate?, date?, time?}
    ════════════════════════════════════════════════════════════ */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVRdGUkdMy90d4I9o1Dun2aeMU-Np75FCA23TZrvXvJu7qMfEbcz-pynyTa86e-KQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFYfNdIprllmamzxWaFZfltcxXqBuliT6Ee2eWQArAIMQSao4v_6O0h4wazXnESEkr/exec";
 const DEMO = !APPS_SCRIPT_URL;
-const DEMO_PIN = "demo";
 
 const DEFAULT_CONFIG = {
   shifts: ["Morning","Night","Over Night","Morning 12 H","Over Night 12 H","Over Shift (M)","Over Shift (N)","Over Shift (ON)"],
-  units: ["NC Room 106","NC Room 102","NC Room 108","2ND Floor (SF)","4TH Floor (SF)"],
-  queues: [
-    "v4_sc3_full_scene_3d_lanes_parallel_labeling",
-    "mpg_sc3_full_scene_mapless_3d_lanes",
-    "sc3_full_scene_highway_mapless_filtered_3d_lanes",
-    "sc3_full_scene_highway_lanes_first_lidar_labeling",
-    "sc3_full_scene_highway_lidar_only_labeling",
-    "sc3_full_scene_lane_lidar_parallel_labeling",
-    "gs_sc3_full_scene_mapless_3d_only",
-    "r2s_sc3_3d_labeling",
-    "alpine_sc3_full_scene_3d_lanes_parallel_labeling"
-  ],
+  units: ["NC Room 104","NC Room 105","NC Room 106","NC Room 102","NC Room 108","2ND Floor (SF)","4TH Floor (SF)"],
+  /* Queues are read from the "Queue List" tab (Queue | Highlight). Nothing is hardcoded here. */
+  queues: DEMO ? [{name:'r2s_sc3_3d_labeling',highlight:'r2s'},{name:'v4_sc3_full_scene_3d_lanes_parallel_labeling',highlight:'parallel'}] : [],
   /* QTC names are read from the sheet tabs (Morning / Night / Over Night QTC) — nothing is hardcoded here. */
   personnel: { M:{ qtc:[] }, N:{ qtc:[] }, ON:{ qtc:[] } }
 };
@@ -585,21 +525,6 @@ function h(tag, props = {}, ...kids){
   kids.flat().forEach(c => c != null && e.append(c));
   return e;
 }
-const ICON = {
-  pencil:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
-  x:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="width:14px;height:14px"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  plus:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-  unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>'
-};
-function iconBtn(kind, label, onclick){
-  const b = h('button', { type:'button', class:'mini-btn', 'aria-label':label, title:label, onclick });
-  b.innerHTML = ICON[kind]; return b;
-}
-function armed(btn, action){           // two-tap confirm for destructive actions
-  if (btn.dataset.armed){ clearTimeout(btn._t); delete btn.dataset.armed; action(); return; }
-  btn.dataset.armed = '1'; btn._t = setTimeout(() => delete btn.dataset.armed, 2600);
-}
 
 /* ───── state ───── */
 const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtcName','yubikey','taskLink','taskId','pass','stage','modality','queueName','objects'];
@@ -610,7 +535,7 @@ const auto = { taskId:false, pass:false, stage:false, modality:false, queueName:
 const touched = {};
 let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); 
 let linkQueue = '';            // queue found in the link but missing from the list
-let editMode = false, sessionPin = '', busy = false, attempted = false;
+let busy = false, attempted = false;
 
 const PC_WORDS = ['SV','Buffer','QTC','SL'];
 function normPc(raw){
@@ -676,7 +601,7 @@ function setVal(f, v, fromUser = false){
 }
 
 /* ───── choice groups ───── */
-function renderChoices(box, options, field, { editType, ctx } = {}){
+function renderChoices(box, options, field){
   box.replaceChildren();
   options.forEach(opt => {
     const label = typeof opt === 'string' ? opt : opt.label;
@@ -686,13 +611,9 @@ function renderChoices(box, options, field, { editType, ctx } = {}){
       touched[field] = true;
       afterPick(field);
     }});
-    chip.append(label);
+    chip.append(typeof opt !== 'string' && opt.node ? opt.node : label);
     if (typeof opt !== 'string' && opt.from) chip.append(h('span', { class:'from', text:'from link' }));
-    if (editType){
-      box.append(h('div', { class:'choice' }, chip,
-        iconBtn('pencil', 'Rename', () => openAdd({ mode:'rename', type:editType, ctx, old:value })),
-        iconBtn('x', 'Delete (tap twice)', function(){ armed(this, () => deleteItem(editType, ctx, value)); })));
-    } else box.append(chip);
+    box.append(h('div', { class:'choice' }, chip));
   });
 }
 function afterPick(field){
@@ -707,17 +628,33 @@ function afterPick(field){
   if (field === 'queueName') renderQueues();
 }
 const renderShift = () => renderChoices($('#shiftChoices'), CONFIG.shifts, 'shift');
-const renderUnits = () => renderChoices($('#unitChoices'), CONFIG.units, 'unit', { editType:'unit' });
+const renderUnits = () => renderChoices($('#unitChoices'), CONFIG.units, 'unit');
 const renderQtcShift = () => renderChoices($('#qtcShiftChoices'), [{label:'Morning',value:'M'},{label:'Night',value:'N'},{label:'Over Night',value:'ON'}], 'qtcShift');
 const renderPass = () => renderChoices($('#passChoices'), ['FP','QA'], 'pass');
 const renderStage = () => renderChoices($('#stageChoices'), STAGES, 'stage');
 const renderModality = () => renderChoices($('#modalityChoices'), ['Lidar','Lane Line'], 'modality');
+/* Queue name with its Highlight keyword marked (every occurrence, case-insensitive).
+   If the keyword isn't part of the name (e.g. "MSL Relabeling"), it shows as a small tag after the name. */
+const escRe = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function queueNode(name, hl){
+  const frag = document.createDocumentFragment();
+  if (hl && new RegExp(escRe(hl), 'i').test(name)){
+    name.split(new RegExp('(' + escRe(hl) + ')', 'i')).forEach((part, i) => {
+      if (!part) return;
+      frag.append(i % 2 ? h('mark', { class:'hl', text:part }) : document.createTextNode(part));
+    });
+  } else {
+    frag.append(document.createTextNode(name));
+    if (hl) frag.append(h('span', { class:'hl-tag', text:hl }));
+  }
+  return frag;
+}
 function renderQueues(){
-  const list = CONFIG.queues.map(q => ({ label:q, value:q }));
-  if (linkQueue && !CONFIG.queues.includes(linkQueue)) list.unshift({ label:linkQueue, value:linkQueue, from:true });
-  renderChoices($('#queueChoices'), list, 'queueName', { editType: editMode ? 'queue' : null });
-  // temp queue from the link can't be renamed/deleted; keep controls only for saved ones
-  $$('#queueChoices .choice').forEach(c => { if (c.querySelector('.from')) c.querySelectorAll('.mini-btn').forEach(b => b.remove()); });
+  const names = CONFIG.queues.map(q => q.name);
+  const list = CONFIG.queues.map(q => ({ label:q.name, value:q.name, node:queueNode(q.name, q.highlight) }));
+  if (linkQueue && !names.includes(linkQueue)) list.unshift({ label:linkQueue, value:linkQueue, from:true });
+  renderChoices($('#queueChoices'), list, 'queueName');
+  if (!list.length) $('#queueChoices').append(h('div', { class:'queue-empty', dir:'auto', text:'مفيش Queues — تأكد إن تاب "Queue List" فيها بيانات.' }));
 }
 function passHint(){
   const el = $('#passHint'); const det = $('#taskLink')._passFromLink;
@@ -730,7 +667,13 @@ function normPeople(list){
   return (list || []).map(x => typeof x === 'string' ? { name:x.trim(), role:'', local:false }
     : { name:String(x.name || '').trim(), role:String(x.role || '').trim(), local:!!x.local }).filter(x => x.name);
 }
-function normalizeCfg(c = CONFIG){ c.personnel ||= {}; ['M','N','ON'].forEach(k => { const p = (c.personnel[k] ||= { qtc:[] }); p.qtc = normPeople(p.qtc); }); }
+function normQueues(list){
+  const seen = new Set();
+  return (Array.isArray(list) ? list : []).map(x => typeof x === 'string' ? { name:x.trim(), highlight:'' }
+    : { name:String(x.name ?? x.queue ?? '').trim(), highlight:String(x.highlight ?? '').trim() })
+    .filter(x => x.name && !seen.has(x.name) && seen.add(x.name));
+}
+function normalizeCfg(c = CONFIG){ c.queues = normQueues(c.queues); c.personnel ||= {}; ['M','N','ON'].forEach(k => { const p = (c.personnel[k] ||= { qtc:[] }); p.qtc = normPeople(p.qtc); }); }
 function renderQtc(){
   const box = $('#qtcBox'); box.replaceChildren();
   if (!S.qtcShift){ box.append(h('div', { class:'combo-empty', dir:'auto', text:'اختار شيفت الـ QTC الأول عشان تظهر الأسماء.' })); return; }
@@ -742,7 +685,6 @@ function renderQtc(){
   const tag = h('div', { class:'qtc-tag-row' });
   const empty = h('div', { class:'combo-empty hidden', dir:'auto', text:'مفيش اسم بالشكل ده.' });
   box.append(search);
-  if (editMode) box.append(h('div', { style:'margin-top:10px' }, addBtn('Add name', () => openAdd({ mode:'add', type:'qtc', ctx }))));
   box.append(grid, tag);
   const badge = r => r ? h('span', { class:'role r-' + r.toLowerCase().replace(/[^a-z]/g, ''), text:r }) : null;
   const cards = people.map(p => {
@@ -750,10 +692,7 @@ function renderQtc(){
     const pick = h('button', { type:'button', class:'qtc-pick', role:'option', 'aria-selected':'false',
       onclick:() => { touched.qtcName = true; setVal('qtcName', S.qtcName === p.name ? '' : p.name); paintSel(); } },
       check, h('span', { class:'qtc-txt' }, h('span', { class:'qtc-name', text:p.name }), p.role ? h('span', { class:'qtc-role', text:p.role }) : null));
-    const card = h('div', { class:'qtc-card' }, pick,
-      h('button', { type:'button', class:'role-cycle', title:'Change label', text:p.role || '+ label', onclick:() => cycleRole(ctx, p.name) }),
-      iconBtn('pencil', 'Edit', () => openAdd({ mode:'rename', type:'qtc', ctx, old:p.name, role:p.role })),
-      iconBtn('x', 'Delete (tap twice)', function(){ armed(this, () => deleteItem('qtc', ctx, p.name)); }));
+    const card = h('div', { class:'qtc-card' }, pick);
     return { p, card, pick, check };
   });
   grid.append(empty, ...cards.map(c => c.card));
@@ -773,14 +712,6 @@ function renderQtc(){
     renderTag();
   }
   applyFilter(); paintSel();
-}
-function cycleRole(ctx, name){
-  const list = CONFIG.personnel[ctx].qtc; const it = list.find(x => x.name === name); if (!it) return;
-  const order = ['', ...ROLES]; it.role = order[(order.indexOf(it.role) + 1) % order.length]; it.local = true;
-  renderQtc(); saveConfig();
-}
-function addBtn(label, onclick){
-  const b = h('button', { type:'button', class:'add-btn', onclick }); b.innerHTML = ICON.plus; b.append(label); b.style.display = 'inline-flex'; return b;
 }
 
 /* ───── identity summary / collapse ───── */
@@ -840,7 +771,7 @@ function onLink(raw, fromBlur = false){
   const qm = v.match(/\/queue\/([^\/?#]+)/i);
   if (qm){
     const q = decodeURIComponent(qm[1]);
-    if (!CONFIG.queues.includes(q)) linkQueue = q;
+    if (!CONFIG.queues.some(x => x.name === q)) linkQueue = q;
     S.queueName = q; setAuto('queueName', true);
   }
   hint.textContent = '✓'; hint.classList.add('ok','chk');
@@ -1036,113 +967,6 @@ renderOutbox(); setTimeout(outboxFlush, 800);
 })();
 $('#submitBtn').addEventListener('click', submit);
 
-/* ───── edit mode (PIN + lists) ───── */
-const pinDlg = $('#pinDlg');
-$('#editToggle').addEventListener('click', () => {
-  if (editMode) return exitEdit();
-  $('#pinInput').value = ''; $('#pinErr').textContent = ''; pinDlg.showModal(); setTimeout(() => $('#pinInput').focus(), 40);
-});
-$('#pinCancel').addEventListener('click', () => pinDlg.close());
-$('#pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitPin(); });
-$('#pinOk').addEventListener('click', submitPin);
-async function submitPin(){
-  const pin = $('#pinInput').value; if (!pin) return;
-  const btn = $('#pinOk'); btn.disabled = true; btn.textContent = 'Checking…';
-  try {
-    let ok;
-    if (DEMO) ok = pin === DEMO_PIN;
-    else { const r = await fetch(APPS_SCRIPT_URL + '?action=verifyPin&pin=' + encodeURIComponent(pin)); ok = (await r.json()).success; }
-    if (ok){ sessionPin = pin; pinDlg.close(); enterEdit(); }
-    else $('#pinErr').textContent = 'الـ Password غلط';
-  } catch { $('#pinErr').textContent = 'مفيش اتصال — جرب تاني'; }
-  btn.disabled = false; btn.textContent = 'Unlock';
-}
-function setLockIcon(open){ $('#editIco').innerHTML = open ? ICON.unlock : ICON.lock; }
-function enterEdit(){
-  editMode = true; document.body.classList.add('editing');
-  $('#editBanner').classList.remove('hidden'); $('#editLabel').textContent = 'Exit edit'; setLockIcon(true);
-  collapseWho(false); renderUnits(); renderQueues(); renderQtc();
-}
-function exitEdit(){
-  editMode = false; sessionPin = ''; document.body.classList.remove('editing');
-  $('#editBanner').classList.add('hidden'); $('#editLabel').textContent = 'Edit lists'; setLockIcon(false);
-  renderUnits(); renderQueues(); renderQtc();
-}
-$('#exitEdit').addEventListener('click', exitEdit);
-$$('[data-add]').forEach(b => b.addEventListener('click', () => openAdd({ mode:'add', type:b.dataset.add })));
-
-let saveTimer;
-function saveStatus(msg, bad = false){
-  const el = $('#saveStatus'); el.textContent = msg; el.style.color = bad ? 'var(--bad)' : '';
-  clearTimeout(saveStatus._t); if (msg && !msg.endsWith('…')) saveStatus._t = setTimeout(() => el.textContent = '', 3000);
-}
-function saveConfig(){ saveStatus('Saving…'); clearTimeout(saveTimer); saveTimer = setTimeout(doSaveConfig, 450); }
-async function doSaveConfig(){
-  if (DEMO){ store.set('meti-backup-config', CONFIG); saveStatus('Saved on this device (preview)'); return; }
-  try {
-    const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify({ action:'saveConfig', pin:sessionPin, config:CONFIG }) });
-    const d = await r.json(); d.success ? saveStatus('Saved for everyone') : saveStatus('Save failed', true);
-  } catch { saveStatus('No connection — not saved', true); }
-}
-
-const addDlg = $('#addDlg'); let pending = null;
-const ADD_TEXT = {
-  qtc:   { add:'Add QTC name', rename:'Edit QTC', hint:'الاسم كامل + اختار الـ Label (QT / SV / SSV)' },
-  queue: { add:'Add queue', rename:'Rename queue', hint:'اسم الـ queue كامل (من غير مسافات)' },
-  unit:  { add:'Add unit', rename:'Rename unit', hint:'مثال: NC Room 110' }
-};
-let pendingRole = '';
-function renderRoleSeg(){
-  const seg = $('#roleSeg'); seg.replaceChildren();
-  ['', ...ROLES].forEach(r => seg.append(h('button', { type:'button', class:'chip', role:'radio', 'aria-checked':String(pendingRole === r), text:r || 'None',
-    onclick:() => { pendingRole = r; renderRoleSeg(); } })));
-}
-function openAdd(p){
-  pending = p;
-  pendingRole = p.role || ''; $('#rolePick').classList.toggle('hidden', p.type !== 'qtc'); if (p.type === 'qtc') renderRoleSeg();
-  const t = ADD_TEXT[p.type];
-  $('#addTitle').textContent = p.mode === 'add' ? t.add + (p.type === 'qtc' ? ` · ${p.ctx}` : '') : t.rename;
-  $('#addHint').textContent = t.hint; $('#addErr').textContent = '';
-  $('#addInput').value = p.old || ''; addDlg.showModal();
-  setTimeout(() => { $('#addInput').focus(); $('#addInput').select(); }, 40);
-}
-$('#addCancel').addEventListener('click', () => addDlg.close());
-$('#addInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitAdd(); });
-$('#addOk').addEventListener('click', submitAdd);
-function listFor(type, ctx){
-  if (type === 'qtc') return (CONFIG.personnel[ctx] ||= { qtc:[] }).qtc;
-  return type === 'queue' ? CONFIG.queues : CONFIG.units;
-}
-function submitAdd(){
-  const { mode, type, ctx, old } = pending;
-  let val = $('#addInput').value.trim();
-  if (type === 'queue') val = val.replace(/\s+/g, '_');
-  if (!val){ $('#addErr').textContent = 'اكتب الاسم الأول'; return; }
-  const list = listFor(type, ctx);
-  if (type === 'qtc'){
-    if (list.some(x => x.name.toLowerCase() === val.toLowerCase() && x.name !== old)){ $('#addErr').textContent = 'الاسم ده موجود بالفعل'; return; }
-    if (mode === 'add') list.push({ name:val, role:pendingRole, local:true });
-    else { const it = list.find(x => x.name === old); if (it){ if (!it.local && it.name !== val) it.orig = it.name; it.name = val; it.role = pendingRole; it.local = true; } if (S.qtcName === old) setVal('qtcName', val); }
-    addDlg.close(); rerenderList('qtc'); saveConfig(); return;
-  }
-  if (list.some(x => x.toLowerCase() === val.toLowerCase() && x !== old)){ $('#addErr').textContent = 'الاسم ده موجود بالفعل'; return; }
-  if (mode === 'add') list.push(val);
-  else {
-    list[list.indexOf(old)] = val;
-    const f = type === 'qtc' ? 'qtcName' : type === 'queue' ? 'queueName' : 'unit';
-    if (S[f] === old) setVal(f, val);
-  }
-  addDlg.close(); rerenderList(type); saveConfig();
-}
-function deleteItem(type, ctx, val){
-  const list = listFor(type, ctx);
-  list.splice(type === 'qtc' ? list.findIndex(x => x.name === val) : list.indexOf(val), 1);
-  const f = type === 'qtc' ? 'qtcName' : type === 'queue' ? 'queueName' : 'unit';
-  if (S[f] === val) setVal(f, '');
-  rerenderList(type); saveConfig();
-}
-function rerenderList(type){ type === 'qtc' ? renderQtc() : type === 'queue' ? renderQueues() : renderUnits(); progress(); }
-
 /* ───── input bindings ───── */
 $$('[data-bind]').forEach(inp => {
   const f = inp.dataset.bind;
@@ -1193,7 +1017,7 @@ const CFG_CACHE = 'meti-backup-config-cache';
 function mergeCfg(c){
   const d = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   return { shifts: c.shifts?.length ? c.shifts : d.shifts, units: c.units?.length ? c.units : d.units,
-           queues: c.queues?.length ? c.queues : d.queues, personnel: c.personnel || d.personnel };
+           queues: Array.isArray(c.queues) ? c.queues : d.queues, personnel: c.personnel || d.personnel };
 }
 async function syncConfig(){
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
@@ -1208,8 +1032,7 @@ async function syncConfig(){
   finally { clearTimeout(t); }
 }
 async function init(){
-  if (DEMO){ const c = store.get('meti-backup-config', null); if (c) CONFIG = c; }
-  else { const c = store.get(CFG_CACHE, null); if (c) CONFIG = mergeCfg(c); }
+  if (!DEMO){ const c = store.get(CFG_CACHE, null); if (c) CONFIG = mergeCfg(c); }
   normalizeCfg(); loadSaved();
   ['pcNo','labelerName','nationalId'].forEach(f => $('#' + f).value = S[f]);
   const ym = S.yubikey.match(/^me(\d{6})@/i); if (ym) $('#yubikey').value = ym[1];
