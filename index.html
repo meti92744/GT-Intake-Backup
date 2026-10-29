@@ -231,7 +231,7 @@ body{background:radial-gradient(900px 420px at 85% -8%,color-mix(in srgb,var(--b
 .chip{background:var(--sheet);border-radius:999px;padding:9px 16px}
 .chip[aria-checked="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
 .chip[aria-checked="true"]::before{background:#fff}
-.seg{border:0;border-radius:999px;padding:4px;gap:4px;background:var(--chip)}
+.seg{border:0;border-radius:22px;padding:4px;gap:4px;background:var(--chip);flex-wrap:wrap}
 .seg .chip{border:0;padding:9px 20px}.seg .chip+.chip{border:0}
 .seg .chip[aria-checked="true"]{background:var(--blue)}
 .queues .chip{border-radius:12px}
@@ -271,6 +271,8 @@ dialog{border-radius:20px}
 .qtc-pick{padding:10px 10px}
 
 .hint.chk{font-size:22px;font-weight:800;line-height:1;margin-top:8px}
+@media (max-width:560px){.seg .chip{padding:9px 14px}}
+.inp[readonly]{cursor:default;caret-color:transparent}
 </style>
 </head>
 <body>
@@ -408,7 +410,7 @@ dialog{border-radius:20px}
       <div class="stack">
         <div class="field" data-f="taskId">
           <label for="taskId">Task ID <span class="auto-pill">auto</span></label>
-          <input class="inp" id="taskId" data-bind="taskId" inputmode="numeric" autocomplete="off" placeholder="Read from the link">
+          <input class="inp" id="taskId" readonly tabindex="-1" inputmode="numeric" autocomplete="off" placeholder="Read from the link">
           <div class="err" dir="auto"></div>
         </div>
         <div class="field" data-f="objects">
@@ -428,7 +430,7 @@ dialog{border-radius:20px}
         </div>
         <div class="field" data-f="stage">
           <div class="lbl" id="l-stage">Stage <span class="auto-pill">auto</span></div>
-          <div class="seg" id="stageChoices" role="radiogroup" aria-labelledby="l-stage"></div>
+          <input class="inp" id="stageView" readonly tabindex="-1" placeholder="Detected from the link" aria-labelledby="l-stage">
           <div class="err" dir="auto"></div>
         </div>
         <div class="field" data-f="modality">
@@ -477,7 +479,7 @@ dialog{border-radius:20px}
      GET  ?action=getConfig            → {success, config}   (config.queues = rows of the "Queue List" tab: [{name, highlight}])
      POST {action:'submitTask', …fields}  → {success, message, duplicate?, date?, time?}
    ════════════════════════════════════════════════════════════ */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFYfNdIprllmamzxWaFZfltcxXqBuliT6Ee2eWQArAIMQSao4v_6O0h4wazXnESEkr/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEHWf43sbyC5Lp7vVV_vHjd7KaYdRUgCuxdPrMAq25MuwE0KOXcSdVjvkxbOu1Ay9T/exec";
 const DEMO = !APPS_SCRIPT_URL;
 
 const DEFAULT_CONFIG = {
@@ -491,7 +493,13 @@ const DEFAULT_CONFIG = {
 
 /* Task link rules (same as Spot Check) */
 const LINK_PATTERN = /^https:\/\/labeling\.robot\.car\/#\/tasks\/do\/[A-Za-z0-9_]+\/id\/\d+(\/queue\/[^\/?#]+)?(\/frame\/.*)?$/i;
-const STAGES = ['Lidar Stage','Sellmapping Stage','Relabeling Stage'];
+/* Stage is NEVER chosen by hand: it comes from the task type inside the link. */
+function stageFromType(type){
+  if (/^sell[il]vandar/i.test(type)) return 'Lidar Stage';
+  if (/^sellmapping/i.test(type)) return 'Sellmapping Stage';
+  if (/^sellrelabeling/i.test(type)) return 'Relabeling Stage';
+  return '';
+}
 const TASK_TYPE_RULES = [
   /* Sellivandar: tolerant to "I"/"l" typo and with/without "2D" */
   { match:/^sell[il]vandar(2d)?qa$/i, pass:'QA', modality:'Lidar',     stage:'Lidar Stage' },
@@ -509,6 +517,7 @@ const ROLES = ['QT','SV','SSV'];
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const safeDec = s => { try { return decodeURIComponent(s); } catch { return s; } };
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
@@ -531,6 +540,7 @@ const FIELDS = ['shift','unit','pcNo','labelerName','nationalId','qtcShift','qtc
 const IDENTITY = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];
 const SAVED = ['shift','unit','pcNo','labelerName','nationalId','yubikey'];   // filled once, remembered on this device
 const S = Object.fromEntries(FIELDS.map(f => [f, '']));
+let unknownType = '';   // task type in the pasted link that has no Stage mapping
 const auto = { taskId:false, pass:false, stage:false, modality:false, queueName:false };
 const touched = {};
 let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); 
@@ -565,7 +575,7 @@ const validators = {
               : '',
   taskId: v => /^\d{10,}$/.test(v) ? '' : 'الـ Task ID لازم يكون 10 أرقام على الأقل',
   pass: v => v ? '' : 'اختار FP أو QA',
-  stage: v => v ? '' : 'اختار الـ Stage',
+  stage: v => v ? '' : (unknownType ? `نوع التاسك "${unknownType}" مش معروف — الـ Stage بيتحدد أوتوماتيك ومش هينفع تبعته` : 'الـ Stage بيتحدد أوتوماتيك من لينك التاسك'),
   modality: v => v ? '' : 'اختار الـ Modality',
   queueName: v => v ? '' : 'اختار الـ Queue',
   objects: v => /^\d+$/.test(String(v)) ? '' : 'اكتب عدد الـ Objects'
@@ -601,7 +611,7 @@ function setVal(f, v, fromUser = false){
 }
 
 /* ───── choice groups ───── */
-function renderChoices(box, options, field){
+function renderChoices(box, options, field, { wrap = false } = {}){
   box.replaceChildren();
   options.forEach(opt => {
     const label = typeof opt === 'string' ? opt : opt.label;
@@ -613,7 +623,7 @@ function renderChoices(box, options, field){
     }});
     chip.append(typeof opt !== 'string' && opt.node ? opt.node : label);
     if (typeof opt !== 'string' && opt.from) chip.append(h('span', { class:'from', text:'from link' }));
-    box.append(h('div', { class:'choice' }, chip));
+    box.append(wrap ? h('div', { class:'choice' }, chip) : chip);
   });
 }
 function afterPick(field){
@@ -623,15 +633,14 @@ function afterPick(field){
   if (field === 'unit') renderUnits();
   if (field === 'qtcShift'){ S.qtcName = ''; qtcQuery = ''; renderQtcShift(); renderQtc(); }
   if (field === 'pass'){ renderPass(); passHint(); }
-  if (field === 'stage') renderStage();
   if (field === 'modality') renderModality();
   if (field === 'queueName') renderQueues();
 }
 const renderShift = () => renderChoices($('#shiftChoices'), CONFIG.shifts, 'shift');
-const renderUnits = () => renderChoices($('#unitChoices'), CONFIG.units, 'unit');
+const renderUnits = () => renderChoices($('#unitChoices'), CONFIG.units, 'unit', { wrap:true });
 const renderQtcShift = () => renderChoices($('#qtcShiftChoices'), [{label:'Morning',value:'M'},{label:'Night',value:'N'},{label:'Over Night',value:'ON'}], 'qtcShift');
 const renderPass = () => renderChoices($('#passChoices'), ['FP','QA'], 'pass');
-const renderStage = () => renderChoices($('#stageChoices'), STAGES, 'stage');
+const renderStage = () => { $('#stageView').value = S.stage || ''; };
 const renderModality = () => renderChoices($('#modalityChoices'), ['Lidar','Lane Line'], 'modality');
 /* Queue name with its Highlight keyword marked (every occurrence, case-insensitive).
    If the keyword isn't part of the name (e.g. "MSL Relabeling"), it shows as a small tag after the name. */
@@ -653,7 +662,7 @@ function renderQueues(){
   const names = CONFIG.queues.map(q => q.name);
   const list = CONFIG.queues.map(q => ({ label:q.name, value:q.name, node:queueNode(q.name, q.highlight) }));
   if (linkQueue && !names.includes(linkQueue)) list.unshift({ label:linkQueue, value:linkQueue, from:true });
-  renderChoices($('#queueChoices'), list, 'queueName');
+  renderChoices($('#queueChoices'), list, 'queueName', { wrap:true });
   if (!list.length) $('#queueChoices').append(h('div', { class:'queue-empty', dir:'auto', text:'مفيش Queues — تأكد إن تاب "Queue List" فيها بيانات.' }));
 }
 function passHint(){
@@ -755,27 +764,30 @@ function onLink(raw, fromBlur = false){
   hint.className = 'hint';
   const had = ['taskId','pass','stage','modality','queueName'].some(f => auto[f]);
   ['taskId','pass','stage','modality','queueName'].forEach(f => { if (auto[f]) { S[f] = ''; setAuto(f, false); } });
-  linkQueue = ''; input._passFromLink = '';
+  linkQueue = ''; input._passFromLink = ''; unknownType = ''; remoteDup = null; dupSeq++;
   if (!v){ hint.textContent = ''; if (had) syncAutoUI(); showErr('taskLink'); progress(); return; }
   const bad = validators.taskLink(v);
   if (bad){ hint.textContent = ''; if (fromBlur) touched.taskLink = true; showErr('taskLink'); if (had) syncAutoUI(); progress(); return; }
 
   const id = (v.match(/\/id\/(\d+)/i) || [])[1] || '';
   if (id){ S.taskId = id; setAuto('taskId', true); $('#taskId').value = id; }
-  const type = decodeURIComponent((v.match(/\/tasks\/do\/([^\/?#]+)/i) || [])[1] || '');
+  const type = safeDec((v.match(/\/tasks\/do\/([^\/?#]+)/i) || [])[1] || '');
   const rule = TASK_TYPE_RULES.find(r => r.match.test(type));
-  let pass = rule ? rule.pass : (/qa/i.test(v) ? 'QA' : 'FP');
+  let pass = rule ? rule.pass : (/qa$/i.test(type) ? 'QA' : 'FP');
   S.pass = pass; setAuto('pass', true); input._passFromLink = pass;
-  if (rule && rule.stage){ S.stage = rule.stage; setAuto('stage', true); }
+  const stage = stageFromType(type);
+  if (stage){ S.stage = stage; setAuto('stage', true); } else { unknownType = type; touched.stage = true; }
   if (rule && rule.modality){ S.modality = rule.modality; setAuto('modality', true); }
   const qm = v.match(/\/queue\/([^\/?#]+)/i);
   if (qm){
-    const q = decodeURIComponent(qm[1]);
+    const q = safeDec(qm[1]);
     if (!CONFIG.queues.some(x => x.name === q)) linkQueue = q;
     S.queueName = q; setAuto('queueName', true);
   }
   hint.textContent = '✓'; hint.classList.add('ok','chk');
   syncAutoUI(); touched.taskLink = true; showErr('taskLink'); progress();
+  const dup = findLocalDup(S.taskId, S.taskLink);
+  if (dup) showDup(S.taskId, dup.when, dup.by); else precheckDup(S.taskId, S.taskLink);
 }
 function syncAutoUI(){
   renderPass(); renderStage(); renderModality(); renderQueues(); passHint();
@@ -788,6 +800,35 @@ function syncAutoUI(){
 try { localStorage.removeItem('meti-backup-session'); localStorage.removeItem('meti-backup-ids'); } catch {}
 let session = { count:0, log:[] };
 const doneIds = {};     // taskId → ISO time (this page session only; the sheet itself blocks real duplicates)
+const doneLinks = {};   // normalised task link → ISO time
+const normLink = l => cleanLink(String(l || '')).replace(/\/+$/, '').toLowerCase();
+function findLocalDup(id, link){
+  if (id && doneIds[id]) return { by:'id', when:new Date(doneIds[id]).toLocaleString() };
+  const k = normLink(link);
+  if (k && doneLinks[k]) return { by:'link', when:new Date(doneLinks[k]).toLocaleString() };
+  return null;
+}
+function rememberTask(id, link, iso){ doneIds[id] = iso; const k = normLink(link); if (k) doneLinks[k] = iso; }
+function forgetTask(id, link){ delete doneIds[id]; delete doneLinks[normLink(link)]; }
+/* Ask the sheet right after the link is pasted, so a duplicate is caught BEFORE the user fills the rest.
+   Best effort only: if the check fails, the sheet still refuses duplicates when the task is sent. */
+let remoteDup = null, dupSeq = 0;
+async function precheckDup(id, link){
+  remoteDup = null;
+  if (DEMO || !id) return;
+  const seq = ++dupSeq;
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=checkTask&id=${encodeURIComponent(id)}&link=${encodeURIComponent(link)}`, { signal:ctl.signal });
+    const d = await r.json();
+    if (seq !== dupSeq || S.taskId !== id) return;          // the user already moved on to another link
+    if (d.success && d.duplicate){
+      remoteDup = { id, by:d.by, when:[d.date, d.time].filter(Boolean).join(' ') };
+      showDup(id, remoteDup.when, remoteDup.by);
+    }
+  } catch (e) { /* offline / slow → ignore, the sheet decides on send */ }
+  finally { clearTimeout(t); }
+}
 function renderOdo(){
   const digits = String(session.count).padStart(3, '0');
   const odo = $('#odo');
@@ -812,7 +853,7 @@ function saveSession(){}
 
 $('#undoBtn').addEventListener('click', () => {
   if (!session.count) return;
-  const last = session.log.shift(); session.count--; if (last) delete doneIds[last.id];
+  const last = session.log.shift(); session.count--; if (last) forgetTask(last.id, last.link);
   saveSession(); renderOdo(); renderRecent(); toast('Last task removed from the count');
 });
 $('#resetBtn').addEventListener('click', function(){
@@ -822,13 +863,14 @@ $('#resetBtn').addEventListener('click', function(){
 });
 
 /* ───── submit ───── */
-function toast(msg, isErr = false){
+function toast(msg, isErr = false, ms = isErr ? 7000 : 3200){
   const t = $('#toast'); t.textContent = msg; t.classList.toggle('err', isErr); t.classList.add('show');
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 3200);
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
 }
-function showDup(id, when){
-  $('#dupId').textContent = id; $('#dupWhen').textContent = when ? 'Submitted ' + when : 'This task is already in the database.';
-  $('#dupDlg').showModal();
+function showDup(id, when, by){
+  const what = by === 'link' ? 'This task link' : 'This Task ID';
+  $('#dupId').textContent = id; $('#dupWhen').textContent = what + ' was already submitted' + (when ? ' · ' + when : '.');
+  const dlg = $('#dupDlg'); if (!dlg.open) dlg.showModal();
 }
 $('#dupOk').addEventListener('click', () => { $('#dupDlg').close(); $('#taskLink').focus(); });
 
@@ -836,7 +878,7 @@ function resetTask(){
   ['taskLink','taskId','pass','stage','modality','queueName','objects','qtcShift','qtcName'].forEach(f => { S[f] = ''; touched[f] = false; });
   qtcQuery = '';
   ['taskId','pass','stage','modality','queueName'].forEach(f => setAuto(f, false));
-  linkQueue = ''; $('#taskLink')._passFromLink = ''; lastLink = '';
+  linkQueue = ''; $('#taskLink')._passFromLink = ''; lastLink = ''; unknownType = ''; remoteDup = null; dupSeq++;
   $('#taskLink').value = ''; $('#taskId').value = ''; $('#objects').value = ''; $('#linkHint').textContent = '';
   attempted = false;
   FIELDS.forEach(showErr);
@@ -854,7 +896,9 @@ async function submit(){
     el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth', block:'center' });
     toast('Complete the highlighted field first', true); return;
   }
-  if (doneIds[S.taskId]){ showDup(S.taskId, new Date(doneIds[S.taskId]).toLocaleString()); return; }
+  const dup = findLocalDup(S.taskId, S.taskLink);
+  if (dup){ showDup(S.taskId, dup.when, dup.by); return; }
+  if (remoteDup && remoteDup.id === S.taskId){ showDup(remoteDup.id, remoteDup.when, remoteDup.by); return; }
   busy = true; setTimeout(() => { busy = false; }, 700);
 
   /* Optimistic submit: the task is accepted instantly and sent to the sheet in the background (outbox below),
@@ -862,8 +906,8 @@ async function submit(){
   const payload = { action:'submitTask', timestamp:new Date().toISOString(), ...S };  // S.stage = Lidar/Sellmapping/Relabeling Stage, S.pass = FP/QA
   const now = new Date();
   session.count++;
-  session.log.unshift({ t:now.toTimeString().slice(0,5), id:S.taskId, pass:S.pass, obj:S.objects });
-  doneIds[S.taskId] = now.toISOString();
+  session.log.unshift({ t:now.toTimeString().slice(0,5), id:S.taskId, link:S.taskLink, pass:S.pass, obj:S.objects });
+  rememberTask(S.taskId, S.taskLink, now.toISOString());
   const sentId = S.taskId;
   outboxAdd(payload);
   saveSession(); renderOdo(); renderRecent();
@@ -889,24 +933,29 @@ async function outboxSend(it){
     let res;
     if (DEMO){ await sleep(1200); res = { success:true }; }
     else {
-      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 20000);
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 45000);
       try {
         const r = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(it.payload), signal:ctl.signal });
         res = await r.json();
       } finally { clearTimeout(t); }
     }
     if (res.success){ outboxDrop(it.oid); }
+    else if (res.retry){ throw new Error(res.message || 'server busy'); }   // temporary server problem → keep and retry
     else if (res.duplicate){
       outboxDrop(it.oid);
       // a retry of something that already reached the sheet is fine; a genuine duplicate is reported
       if (it.attempts === 0){
         const i = session.log.findIndex(x => x.id === it.payload.taskId);
         if (i !== -1){ session.log.splice(i, 1); session.count = Math.max(0, session.count - 1); renderOdo(); renderRecent(); }
-        toast(`Task ${it.payload.taskId} was already in the sheet — not added twice`, true);
+        forgetTask(it.payload.taskId, it.payload.taskLink);
+        toast(`Task ${it.payload.taskId} was already in the sheet (${res.by === 'link' ? 'same link' : 'same Task ID'}) — not added twice`, true);
       }
     } else {
       outboxDrop(it.oid);   // the server answered and refused it → retrying won't help, tell the user
-      toast(`Task ${it.payload.taskId} NOT saved: ${res.message || 'rejected by the sheet'} — submit it again`, true);
+      const i = session.log.findIndex(x => x.id === it.payload.taskId);   // it is NOT in the sheet → take it back out of the counter and the session list
+      if (i !== -1){ session.log.splice(i, 1); session.count = Math.max(0, session.count - 1); }
+      forgetTask(it.payload.taskId, it.payload.taskLink); renderOdo(); renderRecent();
+      toast(`Task ${it.payload.taskId} NOT saved: ${res.message || 'rejected by the sheet'} — submit it again`, true, 15000);
     }
   } catch (e){
     it.attempts++; it.next = Date.now() + Math.min(30000, 2000 * it.attempts);   // network / timeout → keep it and retry
@@ -944,7 +993,7 @@ renderOutbox(); setTimeout(outboxFlush, 800);
   if (location.protocol === 'file:') return;
   const hashOf = t => { let x = 0; for (let i = 0; i < t.length; i++){ x = (x << 5) - x + t.charCodeAt(i); x |= 0; } return x; };
   let base = null, shown = false;
-  const idle = () => !busy && !outbox.length && !session.count && !S.taskLink && !S.taskId && !S.objects && !(document.activeElement && document.activeElement.tagName === 'INPUT');
+  const idle = () => !busy && !outbox.length && !session.count && !S.taskLink && !S.taskId && !S.objects && !S.qtcShift && !S.qtcName && !(document.activeElement && document.activeElement.tagName === 'INPUT');
   async function check(){
     try {
       const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache:'no-store' });
@@ -1019,18 +1068,46 @@ function mergeCfg(c){
   return { shifts: c.shifts?.length ? c.shifts : d.shifts, units: c.units?.length ? c.units : d.units,
            queues: Array.isArray(c.queues) ? c.queues : d.queues, personnel: c.personnel || d.personnel };
 }
+let syncing = false, lastSync = 0;
 async function syncConfig(){
-  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+  if (syncing) return false;
+  syncing = true;
+  const hint = $('#qtcSync');
   try {
-    const r = await fetch(APPS_SCRIPT_URL + '?action=getConfig', { signal:ctl.signal }); const d = await r.json();
-    if (d.success && d.config){
-      store.set(CFG_CACHE, d.config);
-      const next = mergeCfg(d.config); normalizeCfg(next);
-      if (JSON.stringify(next) !== JSON.stringify(CONFIG)){ CONFIG = next; renderShift(); renderUnits(); renderQueues(); renderQtc(); }
+    for (let attempt = 0; attempt < 4; attempt++){
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
+      try {
+        const r = await fetch(APPS_SCRIPT_URL + '?action=getConfig', { signal:ctl.signal });
+        const d = await r.json();
+        if (d.success && d.config){
+          store.set(CFG_CACHE, d.config);
+          const next = mergeCfg(d.config); normalizeCfg(next);
+          if (JSON.stringify(next) !== JSON.stringify(CONFIG)){
+            const ae = document.activeElement;
+            const hadSearch = !!(ae && ae.classList && ae.classList.contains('qtc-search'));
+            CONFIG = next; renderShift(); renderUnits(); renderQueues(); renderQtc();
+            if (hadSearch){ const sb = $('.qtc-search'); if (sb){ sb.focus(); try { sb.setSelectionRange(sb.value.length, sb.value.length); } catch (e) {} } }
+          }
+          hint.textContent = ''; lastSync = Date.now();
+          return true;
+        }
+      } catch (e) { /* network / timeout / non-JSON reply → try again */ }
+      finally { clearTimeout(t); }
+      if (attempt < 3){
+        if (!store.get(CFG_CACHE, null)) hint.textContent = 'Loading lists… retrying';
+        await sleep(1500 * 2 ** attempt);
+      }
     }
-  } catch { if (!store.get(CFG_CACHE, null)) $('#qtcSync').textContent = 'Could not reach the sheet — check APPS_SCRIPT_URL / deployment access'; }
-  finally { clearTimeout(t); }
+    if (!store.get(CFG_CACHE, null)){
+      hint.textContent = 'Could not reach the sheet — retrying…';
+      setTimeout(syncConfig, 15000);
+    }
+    return false;
+  } finally { syncing = false; }
 }
+/* pick up sheet changes (new queues, units, names) without a manual refresh */
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !DEMO && Date.now() - lastSync > 120000) syncConfig(); });
+setInterval(() => { if (!document.hidden && !DEMO && Date.now() - lastSync > 300000) syncConfig(); }, 60000);
 async function init(){
   if (!DEMO){ const c = store.get(CFG_CACHE, null); if (c) CONFIG = mergeCfg(c); }
   normalizeCfg(); loadSaved();
